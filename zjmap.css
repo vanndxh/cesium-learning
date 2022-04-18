@@ -1,0 +1,27 @@
+.button {
+    display: inline-block;
+    width: 80px;
+    height: 30px;
+    border-radius: 8px;
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    float: right;
+    margin: 10px 20px 10px 0;
+}
+.button2 {
+    display: inline-block;
+    width: 100px;
+    height: 30px;
+    border-radius: 8px;
+    background-color: cornflowerblue;
+    border: none;
+    color: white;
+    float: right;
+    margin: 10px 20px 10px 0;
+}
+.title {
+    font-size: 18px;
+    display: inline-block;
+    margin: 10px 0 10px 30px;
+}

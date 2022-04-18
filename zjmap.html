@@ -1,0 +1,430 @@
+<!--
+/**
+ * @Author: vanndxh
+ * @Date: 2022-4-14
+ */
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>浙江省地图影像demo</title>
+
+    <script type="text/javascript" src="./node_modules/cesium/Build/Cesium/Cesium.js"></script>
+    <script src="https://unpkg.com/vue@next"></script>
+    <style>
+        @import url(./node_modules/cesium/Build/CesiumUnminified/Widgets/widgets.css);
+        @import "zjmap.css";
+
+        html, body,
+        #cesiumContainer {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+
+</head>
+
+<body>
+<!--tabBar-->
+<h1 class="title" onclick="go(0)">浙江省地图影像demo</h1>
+<h1 class="title" style="margin: 10px 0 10px 2px">v0.0.3</h1>
+<p style="display: inline-block; font-size: 14px; margin: 10px 0 10px 190px">by: vanndxh</p>
+
+<button class="button" onclick="go(0)">回起点</button>
+<button class="button" onclick="go(1)">去浙江</button>
+<button class="button" onclick="go(2)">去诸暨</button>
+
+<button class="button2" onclick="clearFX()">清除分析</button>
+<button class="button2" onclick="addFX()">圆形视域分析</button>
+<button class="button2" onclick="addFX()">视域分析</button>
+<!--content-->
+<div id="cesiumContainer"></div>
+
+<script>
+    /**
+     * state
+     */
+    const tokenYX = "cd3f3677-ffee-4e63-a33f-ec2cb31ffae3"
+    const tokenZJ = "04a4b863-0c13-48df-a054-0aa35e599bbf"
+    const tdtUrl = "https://t0.tianditu.gov.cn/"
+    const proxyPath = "https://ditu.zjzwfw.gov.cn:443/"
+    // window.sgworld = new SmartEarth.SGWorld("cesiumContainer");
+
+    /**
+     * config
+     */
+    let viewer = new Cesium.Viewer("cesiumContainer", {
+        baseLayerPicker: true,
+        timeline: false,
+        navigationHelpButton: false,
+        infoBox: true,
+    })
+    viewer.scene.debugShowFramesPerSecond = true
+    // 中国地区lon & lat
+    const lon = 100.48
+    const lat = 30
+    viewer.camera.setView({destination: Cesium.Cartesian3.fromDegrees(lon, lat, 19000000)})
+    function go (type) {
+        if (type === 2) {
+            viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(120.25, 29.7, 30000)})
+        } else if (type === 1) {
+            viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(120.5, 29, 1000000) })
+        } else if (type === 0) {
+            viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(lon, lat, 19000000) })
+        }
+    }
+
+    /**
+     * 地图影像
+     */
+    viewer.imageryLayers.addImageryProvider(
+        new Cesium.WebMapTileServiceImageryProvider({
+            url: proxyPath + "services/wmts/imgmap/default/oss?request=getcapabilities&service=wmts&token=" + tokenYX,
+            layer: "imgmap",
+            style: "default",
+            format: "image/png",
+            tileMatrixSetID: "esritilematirx",
+            //minimumLevel:9,
+            maximumLevel: 20,//控制最大级别为20
+            //tilingScheme:new Cesium.GeographicTilingScheme(),//2000坐标系
+            tilingScheme:new Cesium.GeographicTilingScheme({
+                ellipsoid:Cesium.Ellipsoid.WGS84,
+                rectangle:new Cesium.Rectangle(-Math.PI,-Math.PI*3/2,Math.PI,Math.PI/2),
+                numberOfLevelZeroTilesX:1,
+                numberOfLevelZeroTilesY:1
+            }),
+            credit: new Cesium.Credit("浙江省影像")
+        })
+    )
+
+    /**
+     * 地图注记
+     */
+    viewer.imageryLayers.addImageryProvider(
+        new Cesium.WebMapTileServiceImageryProvider({
+            url: proxyPath + "services/wmts/imgmap_lab/default/oss?request=getcapabilities&service=wmts&token=" + tokenZJ,
+            layer: "imgmap_lab",
+            style: "default",
+            format: "image/png",
+            tileMatrixSetID: "esritilematirx",
+            //minimumLevel:11,
+            maximumLevel: 20,//控制最大级别为20,
+            //tilingScheme:new Cesium.GeographicTilingScheme(),//2000坐标系
+            tilingScheme:new Cesium.GeographicTilingScheme({
+                ellipsoid:Cesium.Ellipsoid.WGS84,
+                rectangle:new Cesium.Rectangle(-Math.PI,-Math.PI*3/2,Math.PI,Math.PI/2),
+                numberOfLevelZeroTilesX:1,
+                numberOfLevelZeroTilesY:1
+            }),
+            credit: new Cesium.Credit("浙江省影像注记")
+        })
+    )
+
+    /**
+     * 查看经纬度功能
+     */
+    let scene = viewer.scene
+    let entity = viewer.entities.add({
+        label: {
+            show: false,
+            showBackground: true,
+            font: "14px monospace",
+            horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
+            verticalOrigin: Cesium.VerticalOrigin.TOP,
+            pixelOffset: new Cesium.Cartesian2(30, 0),
+        },
+    });
+    // Mouse over the globe to see the cartographic position
+    let handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+    handler.setInputAction(function(movement) {
+        let cartesian = viewer.camera.pickEllipsoid(
+            movement.endPosition,
+            scene.globe.ellipsoid
+        );
+        if (cartesian) {
+            var cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+            var longitudeString = Cesium.Math.toDegrees(
+                cartographic.longitude
+            ).toFixed(6);
+            var latitudeString = Cesium.Math.toDegrees(
+                cartographic.latitude
+            ).toFixed(6);
+            entity.position = cartesian;
+            entity.label.show = true;
+            entity.label.text =
+                "Lon:" + (" " + longitudeString).slice(-10) + "\u00B0" +
+                "\nLat:" + (" " + latitudeString).slice(-10) + "\u00B0"
+        } else {
+            entity.label.show = false;
+        }
+    }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+    /**
+     * 地形
+     */
+    viewer.terrainProvider = Cesium.createWorldTerrain({
+        requestWaterMask : false, // required for water effects
+        requestVertexNormals : false // required for terrain lighting
+    });
+
+    /**
+     * 通视分析
+     */
+    function addFX () {
+        viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(115.77774943, 40.51669238, 1000)})
+        // 开启地形深度监测
+        viewer.scene.globe.depthTestAgainstTerrain = true;
+
+        // 设定初始视角位置点
+        var viewPoint = Cesium.Cartesian3.fromDegrees(115.77774943, 40.51669238, 1000);
+        var viewPointEntity = viewer.entities.add({
+            position: viewPoint,
+            ellipsoid: {
+                // radii: new Cesium.Cartesian3(5, 5, 5),
+                material: Cesium.Color.YELLOW
+            },
+        });
+
+        // 视角位置创建坐标轴
+        var transform = Cesium.Transforms.eastNorthUpToFixedFrame(viewPoint);
+        var modelMatrixPrimitive = viewer.scene.primitives.add(new Cesium.DebugModelMatrixPrimitive({
+            modelMatrix: transform,
+            length: 10.0
+        }));
+
+        // 世界坐标转换为投影坐标
+        var webMercatorProjection = new Cesium.WebMercatorProjection(viewer.scene.globe.ellipsoid);
+        var viewPointWebMercator = webMercatorProjection.project(Cesium.Cartographic.fromCartesian(viewPoint));
+
+        // 排除碰撞监测的对象
+        var objectsToExclude = [viewPointEntity, modelMatrixPrimitive];
+
+        // 目标点集合
+        var TargetPoints = [];
+
+        // 视域点和目标点的距离
+        var radius = 0;
+
+        // 计算45°和135°之间的目标点
+        for (var i = 45; i <= 135; i++) {
+            var linePoints = [];//记录一条线上的所有目标点
+            var pointsNum = 15;//该方向插值点数
+            var lineDis = 200;//每两个插值点之间的距离m1
+            for (let index = 0; index < pointsNum; index++) {
+                radius = index * lineDis;
+                // 度数转弧度
+                var radians = Cesium.Math.toRadians(i);
+                // 计算目标点
+                var toPoint = new Cesium.Cartesian3(viewPointWebMercator.x + radius * Math.cos(radians), viewPointWebMercator.y + radius * Math.sin(radians), 0);
+                // 投影坐标转世界坐标
+                toPoint = webMercatorProjection.unproject(toPoint);
+                // TargetPoints.push(Cesium.Cartographic.toCartesian(toPoint.clone()));
+                var m_cartesian3 = Cesium.Cartographic.toCartesian(toPoint.clone());
+                var m_ellipsoid = viewer.scene.globe.ellipsoid;
+                var m_cartographic = m_ellipsoid.cartesianToCartographic(m_cartesian3);
+                var m_height = viewer.scene.globe.getHeight(m_cartographic);
+                var m_point = Cesium.Cartesian3.fromDegrees(m_cartographic.longitude / Math.PI * 180, m_cartographic.latitude / Math.PI * 180, m_height);
+                linePoints.push({
+                    data: m_point,
+                    show: true
+                });
+            }
+            TargetPoints.push({
+                id: i,
+                points: linePoints
+            });
+        }
+        pickFromRay();
+
+        function pickFromRay() {
+            for (var i = 0; i < TargetPoints.length; i++) {
+                var cur_LinePoints = TargetPoints[i].points;
+                cur_LinePoints.forEach(element => {
+                    // 计算射线的方向&#xff0c;目标点left 视域点right
+                    var direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(element.data, viewPoint, new Cesium.Cartesian3()), new Cesium.Cartesian3());
+                    // 建立射线
+                    var ray = new Cesium.Ray(viewPoint, direction);
+                    // var results = viewer.scene.drillPickFromRay(ray, 10, objectsToExclude); // 计算所有的交互点&#xff0c;最大不超过10个
+                    var result = viewer.scene.pickFromRay(ray, objectsToExclude); // 计算交互点&#xff0c;返回第一个
+                    var buffer = ReturnDistance(element.data, result.position);
+                    // var M_color = Cesium.Color.GREEN;
+                    if (buffer > 10) {
+                        // M_color = Cesium.Color.RED;
+                        element.show = false;
+                    }
+                });
+
+            }
+            drawViewshedLine(TargetPoints);
+        }
+
+        function drawViewshedLine(data) {
+            for (let index = 0; index < data.length; index++) {
+                const element = data[index].points;
+                var startIndex = 0;
+                for (let i = 0; i < element.length; i++) {
+                    var defaultColor = new Cesium.Color(0.1, 1, 0.1, 0.3);
+                    // console.log(&#34;第&#34; + i + &#39;个点的起点是&#xff1a;&#39; + startIndex);
+                    const m_linestart = element[startIndex];
+                    var m_lineshow = m_linestart.show;
+                    const m_lineCurrent = element[i];
+                    const m_lineEnd = element[i + 1];
+                    if (m_lineEnd && m_lineCurrent.show != m_lineEnd.show) {
+                        if (!m_lineshow) {
+                            defaultColor = new Cesium.Color(1, 0.1, 0.1, 0.3);
+                        }
+                        viewer.entities.add({
+                            polyline: {
+                                positions: [m_linestart.data, m_lineEnd.data],
+                                width: 2,
+                                material: defaultColor,
+                                clampToGround: true
+                            }
+                        });
+                        startIndex = i + 1;
+                    }
+                    else if (!m_lineEnd) {
+                        if (!m_lineshow) {
+                            defaultColor = new Cesium.Color(1, 0.1, 0.1, 0.3);
+                        }
+                        viewer.entities.add({
+                            polyline: {
+                                positions: [m_linestart.data, m_lineCurrent.data],
+                                // arcType: Cesium.ArcType.NONE,
+                                width: 2,
+                                material: defaultColor,
+                                // depthFailMaterial: defaultColor,
+                                clampToGround: true
+                            }
+                        });
+                    }
+
+                }
+            }
+        }
+
+        //空间两点距离计算函数
+        function ReturnDistance(pos0, pos1) {
+            var distance = 0;
+            var point1cartographic = Cesium.Cartographic.fromCartesian(pos0);
+            var point2cartographic = Cesium.Cartographic.fromCartesian(pos1);
+            /**根据经纬度计算出距离**/
+            var geodesic = new Cesium.EllipsoidGeodesic();
+            geodesic.setEndPoints(point1cartographic, point2cartographic);
+            var s = geodesic.surfaceDistance;
+            return s.toFixed(2);
+        }
+
+        // 处理交互点
+        function showIntersection(result, destPoint, viewPoint) {
+            // 如果是场景模型的交互点&#xff0c;排除交互点是地球表面
+            if (Cesium.defined(result) && Cesium.defined(result.object)) {
+                drawLine(result.position, viewPoint, Cesium.Color.GREEN); // 可视区域
+                drawLine(result.position, destPoint, Cesium.Color.RED); // 不可视区域
+            } else {
+                drawLine(viewPoint, destPoint, Cesium.Color.GREEN);
+            }
+        }
+    }
+    function clearFX () {
+        if (viewshed) {
+            viewshed.close();
+            viewshed = null;
+        }
+    }
+
+    /**
+     * 按键移动camera
+     */
+    let flags = {
+        looking : false,
+        moveForward : false,
+        moveBackward : false,
+        moveUp : false,
+        moveDown : false,
+        moveLeft : false,
+        moveRight : false
+    };
+    function getFlagForKeyCode(keyCode) {
+        switch (keyCode) {
+            case 'W'.charCodeAt(0):
+                return 'moveForward';
+            case 'S'.charCodeAt(0):
+                return 'moveBackward';
+            case 'Q'.charCodeAt(0):
+                return 'moveUp';
+            case 'E'.charCodeAt(0):
+                return 'moveDown';
+            case 'D'.charCodeAt(0):
+                return 'moveRight';
+            case 'A'.charCodeAt(0):
+                return 'moveLeft';
+            default:
+                return undefined;
+        }
+    }
+    document.addEventListener('keydown', function(e) {
+        var flagName = getFlagForKeyCode(e.keyCode);
+        if (typeof flagName !== 'undefined') {
+            flags[flagName] = true;
+        }
+    }, false);
+
+    document.addEventListener('keyup', function(e) {
+        var flagName = getFlagForKeyCode(e.keyCode);
+        if (typeof flagName !== 'undefined') {
+            flags[flagName] = false;
+        }
+    }, false);
+
+    var ellipsoid = viewer.scene.globe.ellipsoid;
+    viewer.clock.onTick.addEventListener(function(clock) {
+        var camera = viewer.camera;
+
+        if (flags.looking) {
+            var width = canvas.clientWidth;
+            var height = canvas.clientHeight;
+
+            // Coordinate (0.0, 0.0) will be where the mouse was clicked.
+            var x = (mousePosition.x - startMousePosition.x) / width;
+            var y = -(mousePosition.y - startMousePosition.y) / height;
+
+            var lookFactor = 0.05;
+            camera.lookRight(x * lookFactor);
+            camera.lookUp(y * lookFactor);
+        }
+
+        // Change movement speed based on the distance of the camera to the surface of the ellipsoid.
+        var cameraHeight = ellipsoid.cartesianToCartographic(camera.position).height;
+        var moveRate = cameraHeight / 100.0;
+
+        if (flags.moveForward) {
+            camera.moveForward(moveRate);
+        }
+        if (flags.moveBackward) {
+            camera.moveBackward(moveRate);
+        }
+        if (flags.moveUp) {
+            camera.moveUp(moveRate);
+        }
+        if (flags.moveDown) {
+            camera.moveDown(moveRate);
+        }
+        if (flags.moveLeft) {
+            camera.moveLeft(moveRate);
+        }
+        if (flags.moveRight) {
+            camera.moveRight(moveRate);
+        }
+    });
+
+</script>
+
+</body>
+
+</html>
