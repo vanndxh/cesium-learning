@@ -2,6 +2,7 @@
 /**
  * @Author: vanndxh
  * @Date: 2022-4-14
+ * @LastModified: 2022-4-18
  */
 -->
 <!DOCTYPE html>
@@ -12,7 +13,6 @@
     <title>浙江省地图影像demo</title>
 
     <script type="text/javascript" src="./node_modules/cesium/Build/Cesium/Cesium.js"></script>
-    <script src="https://unpkg.com/vue@next"></script>
     <style>
         @import url(./node_modules/cesium/Build/CesiumUnminified/Widgets/widgets.css);
         @import "zjmap.css";
@@ -51,9 +51,7 @@
      */
     const tokenYX = "cd3f3677-ffee-4e63-a33f-ec2cb31ffae3"
     const tokenZJ = "04a4b863-0c13-48df-a054-0aa35e599bbf"
-    const tdtUrl = "https://t0.tianditu.gov.cn/"
     const proxyPath = "https://ditu.zjzwfw.gov.cn:443/"
-    // window.sgworld = new SmartEarth.SGWorld("cesiumContainer");
 
     /**
      * config
@@ -168,7 +166,7 @@
      * 地形
      */
     viewer.terrainProvider = Cesium.createWorldTerrain({
-        requestWaterMask : false, // required for water effects
+        requestWaterMask : true, // required for water effects
         requestVertexNormals : false // required for terrain lighting
     });
 
@@ -331,6 +329,7 @@
             }
         }
     }
+
     function clearFX () {
         if (viewshed) {
             viewshed.close();
@@ -422,6 +421,11 @@
             camera.moveRight(moveRate);
         }
     });
+
+    /**
+     * 视域分析
+     */
+
 
 </script>
 
