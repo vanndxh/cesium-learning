@@ -16,6 +16,7 @@
     <style>
         @import url(./node_modules/cesium/Build/CesiumUnminified/Widgets/widgets.css);
         @import "zjmap.css";
+        /*@import "cesium-viewshed.js";*/
 
         html, body,
         #cesiumContainer {
@@ -430,11 +431,27 @@
     // viewer.scene.globe.depthTestAgainstTerrain = true;
     // 实现鼠标点击确定观测点
     handler.setInputAction(function(e) {
+        // 尝试取模型高度
+        // let cartesian
+        // if (scene.mode !== Cesium.SceneMode.MORPHING) {
+        //     let pickedObject = scene.pick(e.position);
+        //     if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
+        //         cartesian = viewer.scene.pickPosition(e.position);
+        //         if (Cesium.defined(cartesian)) {
+        //             let cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+        //             let lng = Cesium.Math.toDegrees(cartographic.longitude);
+        //             let lat = Cesium.Math.toDegrees(cartographic.latitude);
+        //             let height = cartographic.height;//模型高度
+        //             let mapPosition = {x:lng,y:lat,z:height};
+        //             pos = mapPosition
+        //             console.log(mapPosition);
+        //         }
+        //     }
+        // }
         let cartesian = viewer.camera.pickEllipsoid(
             e.position,
             scene.globe.ellipsoid,
         );
-        console.log(cartesian)
         pos = cartesian
         let entity = viewer.entities.getById('viewPointEntity2');
         viewer.entities.remove(entity)
@@ -450,8 +467,8 @@
 
     function addSY() {
         let options = {
-            position: pos,
-            // Cesium.Cartesian3.fromDegrees(119.67774943, 30.61669238, 3000)
+            // position: pos,
+            position: Cesium.Cartesian3.fromDegrees(119.68134943, 30.62879238, 30), // 测试用例
             distance: 100,
             direction: Cesium.Math.toRadians(20.0),
             hFOV: 53,
@@ -462,17 +479,25 @@
             }
         }
         if (pos) {
+            // 在观测点处加入指示标
+            viewer.entities.add({
+                id: 'viewPointEntity3',
+                position: options.position,
+                ellipsoid: {
+                    radii: new Cesium.Cartesian3(5, 5, 5),
+                    material: Cesium.Color.YELLOW
+                },
+            });
             CreateViewshed(options.position, options.distance, options.direction, options)
             alert("视域分析完成！观测点坐标：" + pos)
         } else {
             alert("请先点击地图确定观测点！")
         }
-
     }
 
     function CreateViewshed(position, distance, direction, options) {
         let spotLightCamera = new Cesium.Camera(scene);
-        let context = viewer.scene.context;
+        let context = scene.context;
 
         const hr = options.hFOV;
         const vr = options.vFOV;
@@ -483,12 +508,12 @@
         } else {
             spotLightCamera.frustum.fov = vr;
         }
-        //spotLightCamera.frustum.fov = options.vFOV; //53 * Math.PI / 180;
+        // spotLightCamera.frustum.fov = options.vFOV; //53 * Math.PI / 180;
         // spotLightCamera.frustum.aspectRatio = 1.0;
         // spotLightCamera.frustum.near = 1.0;
         spotLightCamera.frustum.far = options.distance;
         spotLightCamera.lookAt(position, direction);
-        //Cesium.Cartesian3.clone(this._viewer.scene.globe.ellipsoid.geodeticSurfaceNormal(position, new Cesium.Cartesian3), spotLightCamera.up);
+        // Cesium.Cartesian3.clone(this._viewer.scene.globe.ellipsoid.geodeticSurfaceNormal(position, new Cesium.Cartesian3), spotLightCamera.up);
         let shadowOptions = {
             context: context,
             lightCamera: spotLightCamera,
@@ -500,13 +525,15 @@
 
         let shadowMap = scene.shadowMap;
         if (options.color) {
-            shadowMap._viewshed_Back = new Cesium.Cartesian3(options.color.Back.r, options.color.Back.g, options.color.Back.b);
-            shadowMap._viewshed_Fore = new Cesium.Cartesian3(options.color.Fore.r, options.color.Fore.g, options.color.Fore.b);
+            shadowMap._viewshed_Back = new Cesium.Cartesian3(1, 0, 0);
+            shadowMap._viewshed_Fore = new Cesium.Cartesian3(0, 1, 0);
+            // shadowMap._viewshed_Back = new Cesium.Cartesian3(options.color.Back.r, options.color.Back.g, options.color.Back.b);
+            // shadowMap._viewshed_Fore = new Cesium.Cartesian3(options.color.Fore.r, options.color.Fore.g, options.color.Fore.b);
         }
         shadowMap.enabled = true;
         shadowMap.debugShow = false;
         shadowMap.guid = Cesium.createGuid();
-        //shadowMap._isSpotLight = false;
+        // shadowMap._isSpotLight = false;
         shadowMap.show = true;
         shadowMap.maximumDistance = 10000;
         shadowMap._pointLightRadius = distance;
@@ -524,16 +551,34 @@
         viewsObj.direction = direction;
 
         viewsObj.viewshedObjOptions = options;
-        viewsObj.guid = Cesium.createGuid();
+        // viewsObj.guid = this._cesium.createGuid();
+        viewsObj.guid = shadowMap.guid
         viewsObj.viewshedObjOptions.originalDirection = direction;
         viewsObj.type = "viewshed";
         viewsObj.viewshedMap = shadowMap;
         this._currentObject = viewsObj;
         // Cesium.createViewshedCameraPrimitive(position, direction);
         // this.createViewshedSpherePrimitive(position, 160)
-        console.log(viewsObj)
         return viewsObj;
     }
+
+    /**
+     * 另一种可视域分析
+     * 这种方法的js无法正常使用，格式为MIME
+     */
+
+    // // 分析参数
+    // var viewModel = { verticalAngle: 90, horizontalAngle: 120, distance: 10 };
+    //
+    // // 添加可视域
+    // var viewshed = new Cesium.ViewShed3D(viewer, {
+    //     horizontalAngle: Number(viewModel.horizontalAngle),
+    //     verticalAngle: Number(viewModel.verticalAngle),
+    //     distance: Number(viewModel.distance),
+    //     callback: function () {
+    //         viewModel.distance = viewshed.distance
+    //     }
+    // });
 
     /**
      * 加载3d tiles
