@@ -39,9 +39,10 @@
 <button class="button" onclick="go(1)">去浙江</button>
 <button class="button" onclick="go(2)">去诸暨</button>
 
-<button class="button2" onclick="clearFX()">清除分析</button>
-<button class="button2" onclick="addFX()">圆形视域分析</button>
-<button class="button2" onclick="addFX()">视域分析</button>
+<!--<button class="button2" onclick="clearFX()">清除分析</button>-->
+<button class="button2" onclick="addSY()">视域分析</button>
+<button class="button2" onclick="addTS()">通视分析</button>
+<button class="button3" onclick="viewer.flyTo(tileset);">前往3dtiles测试区</button>
 <!--content-->
 <div id="cesiumContainer"></div>
 
@@ -145,11 +146,11 @@
             scene.globe.ellipsoid
         );
         if (cartesian) {
-            var cartographic = Cesium.Cartographic.fromCartesian(cartesian);
-            var longitudeString = Cesium.Math.toDegrees(
+            let cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+            let longitudeString = Cesium.Math.toDegrees(
                 cartographic.longitude
             ).toFixed(6);
-            var latitudeString = Cesium.Math.toDegrees(
+            let latitudeString = Cesium.Math.toDegrees(
                 cartographic.latitude
             ).toFixed(6);
             entity.position = cartesian;
@@ -173,14 +174,14 @@
     /**
      * 通视分析
      */
-    function addFX () {
-        viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(115.77774943, 40.51669238, 1000)})
+    function addTS () {
+        viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(115.77774943, 40.51669238, 2000)})
         // 开启地形深度监测
         viewer.scene.globe.depthTestAgainstTerrain = true;
 
         // 设定初始视角位置点
-        var viewPoint = Cesium.Cartesian3.fromDegrees(115.77774943, 40.51669238, 1000);
-        var viewPointEntity = viewer.entities.add({
+        let viewPoint = Cesium.Cartesian3.fromDegrees(115.77774943, 40.51669238, 1000);
+        let viewPointEntity = viewer.entities.add({
             position: viewPoint,
             ellipsoid: {
                 // radii: new Cesium.Cartesian3(5, 5, 5),
@@ -189,44 +190,44 @@
         });
 
         // 视角位置创建坐标轴
-        var transform = Cesium.Transforms.eastNorthUpToFixedFrame(viewPoint);
-        var modelMatrixPrimitive = viewer.scene.primitives.add(new Cesium.DebugModelMatrixPrimitive({
+        let transform = Cesium.Transforms.eastNorthUpToFixedFrame(viewPoint);
+        let modelMatrixPrimitive = viewer.scene.primitives.add(new Cesium.DebugModelMatrixPrimitive({
             modelMatrix: transform,
             length: 10.0
         }));
 
         // 世界坐标转换为投影坐标
-        var webMercatorProjection = new Cesium.WebMercatorProjection(viewer.scene.globe.ellipsoid);
-        var viewPointWebMercator = webMercatorProjection.project(Cesium.Cartographic.fromCartesian(viewPoint));
+        let webMercatorProjection = new Cesium.WebMercatorProjection(viewer.scene.globe.ellipsoid);
+        let viewPointWebMercator = webMercatorProjection.project(Cesium.Cartographic.fromCartesian(viewPoint));
 
         // 排除碰撞监测的对象
-        var objectsToExclude = [viewPointEntity, modelMatrixPrimitive];
+        let objectsToExclude = [viewPointEntity, modelMatrixPrimitive];
 
         // 目标点集合
-        var TargetPoints = [];
+        let TargetPoints = [];
 
         // 视域点和目标点的距离
-        var radius = 0;
+        let radius = 0;
 
         // 计算45°和135°之间的目标点
-        for (var i = 45; i <= 135; i++) {
-            var linePoints = [];//记录一条线上的所有目标点
-            var pointsNum = 15;//该方向插值点数
-            var lineDis = 200;//每两个插值点之间的距离m1
+        for (let i = 45; i <= 135; i++) {
+            let linePoints = [];//记录一条线上的所有目标点
+            let pointsNum = 15;//该方向插值点数
+            let lineDis = 200;//每两个插值点之间的距离m1
             for (let index = 0; index < pointsNum; index++) {
                 radius = index * lineDis;
                 // 度数转弧度
-                var radians = Cesium.Math.toRadians(i);
+                let radians = Cesium.Math.toRadians(i);
                 // 计算目标点
-                var toPoint = new Cesium.Cartesian3(viewPointWebMercator.x + radius * Math.cos(radians), viewPointWebMercator.y + radius * Math.sin(radians), 0);
+                let toPoint = new Cesium.Cartesian3(viewPointWebMercator.x + radius * Math.cos(radians), viewPointWebMercator.y + radius * Math.sin(radians), 0);
                 // 投影坐标转世界坐标
                 toPoint = webMercatorProjection.unproject(toPoint);
                 // TargetPoints.push(Cesium.Cartographic.toCartesian(toPoint.clone()));
-                var m_cartesian3 = Cesium.Cartographic.toCartesian(toPoint.clone());
-                var m_ellipsoid = viewer.scene.globe.ellipsoid;
-                var m_cartographic = m_ellipsoid.cartesianToCartographic(m_cartesian3);
-                var m_height = viewer.scene.globe.getHeight(m_cartographic);
-                var m_point = Cesium.Cartesian3.fromDegrees(m_cartographic.longitude / Math.PI * 180, m_cartographic.latitude / Math.PI * 180, m_height);
+                let m_cartesian3 = Cesium.Cartographic.toCartesian(toPoint.clone());
+                let m_ellipsoid = viewer.scene.globe.ellipsoid;
+                let m_cartographic = m_ellipsoid.cartesianToCartographic(m_cartesian3);
+                let m_height = viewer.scene.globe.getHeight(m_cartographic);
+                let m_point = Cesium.Cartesian3.fromDegrees(m_cartographic.longitude / Math.PI * 180, m_cartographic.latitude / Math.PI * 180, m_height);
                 linePoints.push({
                     data: m_point,
                     show: true
@@ -240,17 +241,17 @@
         pickFromRay();
 
         function pickFromRay() {
-            for (var i = 0; i < TargetPoints.length; i++) {
-                var cur_LinePoints = TargetPoints[i].points;
+            for (let i = 0; i < TargetPoints.length; i++) {
+                let cur_LinePoints = TargetPoints[i].points;
                 cur_LinePoints.forEach(element => {
                     // 计算射线的方向&#xff0c;目标点left 视域点right
-                    var direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(element.data, viewPoint, new Cesium.Cartesian3()), new Cesium.Cartesian3());
+                    let direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(element.data, viewPoint, new Cesium.Cartesian3()), new Cesium.Cartesian3());
                     // 建立射线
-                    var ray = new Cesium.Ray(viewPoint, direction);
-                    // var results = viewer.scene.drillPickFromRay(ray, 10, objectsToExclude); // 计算所有的交互点&#xff0c;最大不超过10个
-                    var result = viewer.scene.pickFromRay(ray, objectsToExclude); // 计算交互点&#xff0c;返回第一个
-                    var buffer = ReturnDistance(element.data, result.position);
-                    // var M_color = Cesium.Color.GREEN;
+                    let ray = new Cesium.Ray(viewPoint, direction);
+                    // let results = viewer.scene.drillPickFromRay(ray, 10, objectsToExclude); // 计算所有的交互点&#xff0c;最大不超过10个
+                    let result = viewer.scene.pickFromRay(ray, objectsToExclude); // 计算交互点&#xff0c;返回第一个
+                    let buffer = ReturnDistance(element.data, result.position);
+                    // let M_color = Cesium.Color.GREEN;
                     if (buffer > 10) {
                         // M_color = Cesium.Color.RED;
                         element.show = false;
@@ -264,12 +265,12 @@
         function drawViewshedLine(data) {
             for (let index = 0; index < data.length; index++) {
                 const element = data[index].points;
-                var startIndex = 0;
+                let startIndex = 0;
                 for (let i = 0; i < element.length; i++) {
-                    var defaultColor = new Cesium.Color(0.1, 1, 0.1, 0.3);
+                    let defaultColor = new Cesium.Color(0.1, 1, 0.1, 0.3);
                     // console.log(&#34;第&#34; + i + &#39;个点的起点是&#xff1a;&#39; + startIndex);
                     const m_linestart = element[startIndex];
-                    var m_lineshow = m_linestart.show;
+                    let m_lineshow = m_linestart.show;
                     const m_lineCurrent = element[i];
                     const m_lineEnd = element[i + 1];
                     if (m_lineEnd && m_lineCurrent.show != m_lineEnd.show) {
@@ -308,13 +309,13 @@
 
         //空间两点距离计算函数
         function ReturnDistance(pos0, pos1) {
-            var distance = 0;
-            var point1cartographic = Cesium.Cartographic.fromCartesian(pos0);
-            var point2cartographic = Cesium.Cartographic.fromCartesian(pos1);
-            /**根据经纬度计算出距离**/
-            var geodesic = new Cesium.EllipsoidGeodesic();
+            let distance = 0;
+            let point1cartographic = Cesium.Cartographic.fromCartesian(pos0);
+            let point2cartographic = Cesium.Cartographic.fromCartesian(pos1);
+            // 根据经纬度计算出距离
+            let geodesic = new Cesium.EllipsoidGeodesic();
             geodesic.setEndPoints(point1cartographic, point2cartographic);
-            var s = geodesic.surfaceDistance;
+            let s = geodesic.surfaceDistance;
             return s.toFixed(2);
         }
 
@@ -368,39 +369,39 @@
         }
     }
     document.addEventListener('keydown', function(e) {
-        var flagName = getFlagForKeyCode(e.keyCode);
+        let flagName = getFlagForKeyCode(e.keyCode);
         if (typeof flagName !== 'undefined') {
             flags[flagName] = true;
         }
     }, false);
 
     document.addEventListener('keyup', function(e) {
-        var flagName = getFlagForKeyCode(e.keyCode);
+        let flagName = getFlagForKeyCode(e.keyCode);
         if (typeof flagName !== 'undefined') {
             flags[flagName] = false;
         }
     }, false);
 
-    var ellipsoid = viewer.scene.globe.ellipsoid;
+    let ellipsoid = viewer.scene.globe.ellipsoid;
     viewer.clock.onTick.addEventListener(function(clock) {
-        var camera = viewer.camera;
+        let camera = viewer.camera;
 
         if (flags.looking) {
-            var width = canvas.clientWidth;
-            var height = canvas.clientHeight;
+            let width = canvas.clientWidth;
+            let height = canvas.clientHeight;
 
             // Coordinate (0.0, 0.0) will be where the mouse was clicked.
-            var x = (mousePosition.x - startMousePosition.x) / width;
-            var y = -(mousePosition.y - startMousePosition.y) / height;
+            let x = (mousePosition.x - startMousePosition.x) / width;
+            let y = -(mousePosition.y - startMousePosition.y) / height;
 
-            var lookFactor = 0.05;
+            let lookFactor = 0.05;
             camera.lookRight(x * lookFactor);
             camera.lookUp(y * lookFactor);
         }
 
         // Change movement speed based on the distance of the camera to the surface of the ellipsoid.
-        var cameraHeight = ellipsoid.cartesianToCartographic(camera.position).height;
-        var moveRate = cameraHeight / 100.0;
+        let cameraHeight = ellipsoid.cartesianToCartographic(camera.position).height;
+        let moveRate = cameraHeight / 100.0;
 
         if (flags.moveForward) {
             camera.moveForward(moveRate);
@@ -425,7 +426,123 @@
     /**
      * 视域分析
      */
+    let pos
+    // viewer.scene.globe.depthTestAgainstTerrain = true;
+    // 实现鼠标点击确定观测点
+    handler.setInputAction(function(e) {
+        let cartesian = viewer.camera.pickEllipsoid(
+            e.position,
+            scene.globe.ellipsoid,
+        );
+        console.log(cartesian)
+        pos = cartesian
+        let entity = viewer.entities.getById('viewPointEntity2');
+        viewer.entities.remove(entity)
+        viewer.entities.add({
+            id: 'viewPointEntity2',
+            position: pos,
+            ellipsoid: {
+                radii: new Cesium.Cartesian3(5, 5, 5),
+                material: Cesium.Color.YELLOW
+            },
+        });
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
+    function addSY() {
+        let options = {
+            position: pos,
+            // Cesium.Cartesian3.fromDegrees(119.67774943, 30.61669238, 3000)
+            distance: 100,
+            direction: Cesium.Math.toRadians(20.0),
+            hFOV: 53,
+            vFOV: 53,
+            color: {
+                Fore: Cesium.Color.GREEN,
+                Back: Cesium.Color.RED,
+            }
+        }
+        if (pos) {
+            CreateViewshed(options.position, options.distance, options.direction, options)
+            alert("视域分析完成！观测点坐标：" + pos)
+        } else {
+            alert("请先点击地图确定观测点！")
+        }
+
+    }
+
+    function CreateViewshed(position, distance, direction, options) {
+        let spotLightCamera = new Cesium.Camera(scene);
+        let context = viewer.scene.context;
+
+        const hr = options.hFOV;
+        const vr = options.vFOV;
+        spotLightCamera.frustum.aspectRatio = (options.distance * Math.tan(hr / 2) * 2) / (options.distance * Math.tan(vr / 2) * 2);
+
+        if (hr > vr) {
+            spotLightCamera.frustum.fov = hr;
+        } else {
+            spotLightCamera.frustum.fov = vr;
+        }
+        //spotLightCamera.frustum.fov = options.vFOV; //53 * Math.PI / 180;
+        // spotLightCamera.frustum.aspectRatio = 1.0;
+        // spotLightCamera.frustum.near = 1.0;
+        spotLightCamera.frustum.far = options.distance;
+        spotLightCamera.lookAt(position, direction);
+        //Cesium.Cartesian3.clone(this._viewer.scene.globe.ellipsoid.geodeticSurfaceNormal(position, new Cesium.Cartesian3), spotLightCamera.up);
+        let shadowOptions = {
+            context: context,
+            lightCamera: spotLightCamera,
+            cascadesEnabled: false
+        };
+
+        // scene.shadowMap.destroy();
+        scene.shadowMap = new Cesium.ShadowMap(shadowOptions);
+
+        let shadowMap = scene.shadowMap;
+        if (options.color) {
+            shadowMap._viewshed_Back = new Cesium.Cartesian3(options.color.Back.r, options.color.Back.g, options.color.Back.b);
+            shadowMap._viewshed_Fore = new Cesium.Cartesian3(options.color.Fore.r, options.color.Fore.g, options.color.Fore.b);
+        }
+        shadowMap.enabled = true;
+        shadowMap.debugShow = false;
+        shadowMap.guid = Cesium.createGuid();
+        //shadowMap._isSpotLight = false;
+        shadowMap.show = true;
+        shadowMap.maximumDistance = 10000;
+        shadowMap._pointLightRadius = distance;
+        // Update render states for when polygon offset values change
+        shadowMap.debugCreateRenderStates();
+        shadowMap._distance = options.distance;
+        // Force all derived commands to update
+        shadowMap.dirty = true;
+        viewer.scene.globe.shadows = Cesium.ShadowMode.fromCastReceive(true, true);
+        viewer.scene.globe.show = true;
+        scene.skyAtmosphere.show = false;
+        let viewsObj = {};
+        viewsObj.position = position;
+        viewsObj.distance = distance;
+        viewsObj.direction = direction;
+
+        viewsObj.viewshedObjOptions = options;
+        viewsObj.guid = Cesium.createGuid();
+        viewsObj.viewshedObjOptions.originalDirection = direction;
+        viewsObj.type = "viewshed";
+        viewsObj.viewshedMap = shadowMap;
+        this._currentObject = viewsObj;
+        // Cesium.createViewshedCameraPrimitive(position, direction);
+        // this.createViewshedSpherePrimitive(position, 160)
+        console.log(viewsObj)
+        return viewsObj;
+    }
+
+    /**
+     * 加载3d tiles
+     */
+    let tileset = scene.primitives.add(
+        new Cesium.Cesium3DTileset({
+            url: "http://172.17.70.209:3866/Smartearth/server/SG/anji.397940/tokens(eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImZhbnl1bmxpYW5nIn0.6d019Mi2PbKZ6yY6uRiyuHNq4x2cW5zKugSHBm0iHLo)/b3dm/anji.397940/tileset.json"
+        })
+    )
 
 </script>
 
