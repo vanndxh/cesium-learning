@@ -9,28 +9,6 @@
     float: right;
     margin: 10px 20px 10px 0;
 }
-.button2 {
-    display: inline-block;
-    width: 100px;
-    height: 30px;
-    border-radius: 8px;
-    background-color: cornflowerblue;
-    border: none;
-    color: white;
-    float: right;
-    margin: 10px 20px 10px 0;
-}
-.button3 {
-    display: inline-block;
-    width: 150px;
-    height: 30px;
-    border-radius: 8px;
-    background-color: darkgoldenrod;
-    border: none;
-    color: white;
-    float: right;
-    margin: 10px 20px 10px 0;
-}
 .title {
     font-size: 18px;
     display: inline-block;
