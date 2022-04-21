@@ -2,7 +2,7 @@
 /**
  * @Author: vanndxh
  * @Date: 2022-4-14
- * @LastModified: 2022-4-18
+ * @LastModified: 2022-4-21
  */
 -->
 <!DOCTYPE html>
@@ -32,7 +32,7 @@
 <body>
 <!--tabBar-->
 <h1 class="title" onclick="go(0)">浙江省地图影像demo</h1>
-<h1 class="title" style="margin: 10px 0 10px 2px">v0.0.3</h1>
+<h1 class="title" style="margin: 10px 0 10px 2px">v0.0.4</h1>
 <p style="display: inline-block; font-size: 14px; margin: 10px 0 10px 190px">by: vanndxh</p>
 
 <button class="button" onclick="go(0)">回起点</button>
@@ -67,15 +67,14 @@
     })
     viewer.clock.shouldAnimate = true
     viewer.scene.debugShowFramesPerSecond = true
+    viewer.camera.setView({destination: Cesium.Cartesian3.fromDegrees(100.48, 30, 19000000)})
     let scene = viewer.scene
-    // 中国地区lon & lat
-    const lon = 100.48
-    const lat = 30
-    viewer.camera.setView({destination: Cesium.Cartesian3.fromDegrees(lon, lat, 19000000)})
+    let pos // 存储最后鼠标点击位置，用于日照分析、视域分析等功能
 
     /**
-     * 加载地图影像
+     * 加载地图资源
      */
+    // 地图影像
     viewer.imageryLayers.addImageryProvider(
         new Cesium.WebMapTileServiceImageryProvider({
             url: proxyPath + "services/wmts/imgmap/default/oss?request=getcapabilities&service=wmts&token=" + tokenYX,
@@ -96,9 +95,7 @@
         })
     )
 
-    /**
-     * 加载地图注记
-     */
+    // 地图注记
     viewer.imageryLayers.addImageryProvider(
         new Cesium.WebMapTileServiceImageryProvider({
             url: proxyPath + "services/wmts/imgmap_lab/default/oss?request=getcapabilities&service=wmts&token=" + tokenZJ,
@@ -119,41 +116,23 @@
         })
     )
 
-    /**
-     * 加载地形
-     */
+    // 加载地形
     viewer.terrainProvider = Cesium.createWorldTerrain({
         requestWaterMask : true, // required for water effects
         requestVertexNormals : false // required for terrain lighting
     });
 
-    /**
-     * 加载3d tiles
-     */
+    // 3d tiles
     let tileset = scene.primitives.add(
         new Cesium.Cesium3DTileset({
             url: "http://172.17.70.209:3866/Smartearth/server/SG/anji.397940/tokens(eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImZhbnl1bmxpYW5nIn0.6d019Mi2PbKZ6yY6uRiyuHNq4x2cW5zKugSHBm0iHLo)/b3dm/anji.397940/tileset.json"
         })
     )
 
-
-
     /**
-     * 跳转功能
+     * 鼠标、键盘基础功能的增加
      */
-    function go (type) {
-        if (type === 2) {
-            viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(120.25, 29.7, 30000)})
-        } else if (type === 1) {
-            viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(120.5, 29, 1000000) })
-        } else if (type === 0) {
-            viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(lon, lat, 19000000) })
-        }
-    }
-
-    /**
-     * 查看经纬度功能
-     */
+    // 查看经纬度功能
     let entity = viewer.entities.add({
         label: {
             show: false,
@@ -187,6 +166,130 @@
             entity.label.show = false;
         }
     }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+    // 实现鼠标点击确定观测点
+    handler.setInputAction(function(e) {
+        // 取模型表面的点而不是地球表面的点，并准备好经纬度等数据
+        if (scene.mode !== Cesium.SceneMode.MORPHING) {
+            let pickedObject = scene.pick(e.position);
+            if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
+                let cartesian = viewer.scene.pickPosition(e.position);
+                if (Cesium.defined(cartesian)) {
+                    let cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+                    let lng = Cesium.Math.toDegrees(cartographic.longitude);
+                    let lat = Cesium.Math.toDegrees(cartographic.latitude);
+                    let height = cartographic.height; // 模型高度
+                    let mapPosition = {x:lng,y:lat,z:height};
+                    pos = cartesian
+                }
+            }
+        }
+        let entity2 = viewer.entities.getById('viewPointEntity2');
+        viewer.entities.remove(entity2)
+        viewer.entities.add({
+            id: 'viewPointEntity2',
+            position: pos,
+            ellipsoid: {
+                radii: new Cesium.Cartesian3(5, 5, 5),
+                material: Cesium.Color.YELLOW
+            },
+        });
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    // 按键移动camera
+    let flags = {
+        looking : false,
+        moveForward : false,
+        moveBackward : false,
+        moveUp : false,
+        moveDown : false,
+        moveLeft : false,
+        moveRight : false
+    };
+    function getFlagForKeyCode(keyCode) {
+        switch (keyCode) {
+            case 'W'.charCodeAt(0):
+                return 'moveForward';
+            case 'S'.charCodeAt(0):
+                return 'moveBackward';
+            case 'Q'.charCodeAt(0):
+                return 'moveUp';
+            case 'E'.charCodeAt(0):
+                return 'moveDown';
+            case 'D'.charCodeAt(0):
+                return 'moveRight';
+            case 'A'.charCodeAt(0):
+                return 'moveLeft';
+            default:
+                return undefined;
+        }
+    }
+    document.addEventListener('keydown', function(e) {
+        let flagName = getFlagForKeyCode(e.keyCode);
+        if (typeof flagName !== 'undefined') {
+            flags[flagName] = true;
+        }
+    }, false);
+    document.addEventListener('keyup', function(e) {
+        let flagName = getFlagForKeyCode(e.keyCode);
+        if (typeof flagName !== 'undefined') {
+            flags[flagName] = false;
+        }
+    }, false);
+    let ellipsoid = viewer.scene.globe.ellipsoid;
+    viewer.clock.onTick.addEventListener(function(clock) {
+        let camera = viewer.camera;
+
+        if (flags.looking) {
+            let width = canvas.clientWidth;
+            let height = canvas.clientHeight;
+
+            // Coordinate (0.0, 0.0) will be where the mouse was clicked.
+            let x = (mousePosition.x - startMousePosition.x) / width;
+            let y = -(mousePosition.y - startMousePosition.y) / height;
+
+            let lookFactor = 0.05;
+            camera.lookRight(x * lookFactor);
+            camera.lookUp(y * lookFactor);
+        }
+
+        // Change movement speed based on the distance of the camera to the surface of the ellipsoid.
+        let cameraHeight = ellipsoid.cartesianToCartographic(camera.position).height;
+        let moveRate = cameraHeight / 100.0;
+
+        if (flags.moveForward) {
+            camera.moveForward(moveRate);
+        }
+        if (flags.moveBackward) {
+            camera.moveBackward(moveRate);
+        }
+        if (flags.moveUp) {
+            camera.moveUp(moveRate);
+        }
+        if (flags.moveDown) {
+            camera.moveDown(moveRate);
+        }
+        if (flags.moveLeft) {
+            camera.moveLeft(moveRate);
+        }
+        if (flags.moveRight) {
+            camera.moveRight(moveRate);
+        }
+    });
+
+
+    /**
+     * 跳转功能
+     */
+    function go (type) {
+        if (type === 2) {
+            viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(120.25, 29.7, 30000)})
+        } else if (type === 1) {
+            viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(120.5, 29, 1000000) })
+        } else if (type === 0) {
+            viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(100.48, 30, 19000000) })
+        }
+    }
 
     /**
      * 通视分析
@@ -349,154 +452,22 @@
     }
 
     /**
-     * 按键移动camera
-     */
-    let flags = {
-        looking : false,
-        moveForward : false,
-        moveBackward : false,
-        moveUp : false,
-        moveDown : false,
-        moveLeft : false,
-        moveRight : false
-    };
-    function getFlagForKeyCode(keyCode) {
-        switch (keyCode) {
-            case 'W'.charCodeAt(0):
-                return 'moveForward';
-            case 'S'.charCodeAt(0):
-                return 'moveBackward';
-            case 'Q'.charCodeAt(0):
-                return 'moveUp';
-            case 'E'.charCodeAt(0):
-                return 'moveDown';
-            case 'D'.charCodeAt(0):
-                return 'moveRight';
-            case 'A'.charCodeAt(0):
-                return 'moveLeft';
-            default:
-                return undefined;
-        }
-    }
-    document.addEventListener('keydown', function(e) {
-        let flagName = getFlagForKeyCode(e.keyCode);
-        if (typeof flagName !== 'undefined') {
-            flags[flagName] = true;
-        }
-    }, false);
-    document.addEventListener('keyup', function(e) {
-        let flagName = getFlagForKeyCode(e.keyCode);
-        if (typeof flagName !== 'undefined') {
-            flags[flagName] = false;
-        }
-    }, false);
-
-    let ellipsoid = viewer.scene.globe.ellipsoid;
-    viewer.clock.onTick.addEventListener(function(clock) {
-        let camera = viewer.camera;
-
-        if (flags.looking) {
-            let width = canvas.clientWidth;
-            let height = canvas.clientHeight;
-
-            // Coordinate (0.0, 0.0) will be where the mouse was clicked.
-            let x = (mousePosition.x - startMousePosition.x) / width;
-            let y = -(mousePosition.y - startMousePosition.y) / height;
-
-            let lookFactor = 0.05;
-            camera.lookRight(x * lookFactor);
-            camera.lookUp(y * lookFactor);
-        }
-
-        // Change movement speed based on the distance of the camera to the surface of the ellipsoid.
-        let cameraHeight = ellipsoid.cartesianToCartographic(camera.position).height;
-        let moveRate = cameraHeight / 100.0;
-
-        if (flags.moveForward) {
-            camera.moveForward(moveRate);
-        }
-        if (flags.moveBackward) {
-            camera.moveBackward(moveRate);
-        }
-        if (flags.moveUp) {
-            camera.moveUp(moveRate);
-        }
-        if (flags.moveDown) {
-            camera.moveDown(moveRate);
-        }
-        if (flags.moveLeft) {
-            camera.moveLeft(moveRate);
-        }
-        if (flags.moveRight) {
-            camera.moveRight(moveRate);
-        }
-    });
-
-    /**
      * 视域分析
      */
-    let pos
-    // 实现鼠标点击确定观测点
-    handler.setInputAction(function(e) {
-        // 尝试取模型高度
-        // let cartesian
-        // if (scene.mode !== Cesium.SceneMode.MORPHING) {
-        //     let pickedObject = scene.pick(e.position);
-        //     if (scene.pickPositionSupported && Cesium.defined(pickedObject)) {
-        //         cartesian = viewer.scene.pickPosition(e.position);
-        //         if (Cesium.defined(cartesian)) {
-        //             let cartographic = Cesium.Cartographic.fromCartesian(cartesian);
-        //             let lng = Cesium.Math.toDegrees(cartographic.longitude);
-        //             let lat = Cesium.Math.toDegrees(cartographic.latitude);
-        //             let height = cartographic.height;//模型高度
-        //             let mapPosition = {x:lng,y:lat,z:height};
-        //             pos = mapPosition
-        //             console.log(mapPosition);
-        //         }
-        //     }
-        // }
-        let cartesian = viewer.camera.pickEllipsoid(
-            e.position,
-            scene.globe.ellipsoid,
-        );
-        pos = cartesian
-        let entity2 = viewer.entities.getById('viewPointEntity2');
-        viewer.entities.remove(entity2)
-        viewer.entities.add({
-            id: 'viewPointEntity2',
-            position: pos,
-            ellipsoid: {
-                radii: new Cesium.Cartesian3(5, 5, 5),
-                material: Cesium.Color.YELLOW
-            },
-        });
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
     function addSY() {
         let options = {
             position: pos,
-            // position: Cesium.Cartesian3.fromDegrees(119.68134943, 30.62879238, 30), // 测试用例
             distance: 100,
-            direction: Cesium.Math.toRadians(20.0),
-            hFOV: 53,
-            vFOV: 53,
+            direction: Cesium.Math.toRadians(360.0),
+            hFOV: 360,
+            vFOV: 360,
             color: {
                 Fore: Cesium.Color.GREEN,
                 Back: Cesium.Color.RED,
             }
         }
-        let entity3 = viewer.entities.getById('viewPointEntity3');
-        viewer.entities.remove(entity3)
+
         if (pos) {
-            // 在观测点处加入指示标
-            viewer.entities.add({
-                id: 'viewPointEntity3',
-                position: options.position,
-                ellipsoid: {
-                    radii: new Cesium.Cartesian3(5, 5, 5),
-                    material: Cesium.Color.YELLOW
-                },
-            });
             new CreateViewshed(viewer,options.position, options.distance, options.direction, options)
             alert("视域分析完成！观测点坐标：" + pos)
         } else {
@@ -630,10 +601,42 @@
      * 日照分析
      */
     function lightingShadowInit() {
-        scene.globe.enableLighting = true;
-        viewer.shadows = true;
-        viewer.clock.multiplier = 1000;
-        viewer.clock.shouldAnimate = true
+        if (!pos) {
+            alert("请先确定测量点")
+        } else {
+            // 实现日照分析demo
+            scene.globe.enableLighting = true;
+            viewer.shadows = true;
+            viewer.clock.multiplier = 1000;
+            viewer.clock.shouldAnimate = true
+            // 准备分析结果
+            let cartographic = Cesium.Cartographic.fromCartesian(pos);
+            let lon = Cesium.Math.toDegrees(cartographic.longitude);
+            let lat = Cesium.Math.toDegrees(cartographic.latitude);
+            let height = cartographic.height;
+            let lightingTime = 24 * (Math.acos((Math.tan(lat*0.0175))*(Math.tan(23.5*0.0175)))) / Math.PI
+
+            let now = new Date()
+            let month = (now.getMonth() >= 1 && now.getMonth() <= 9) ? ("0" + now.getMonth().toString()) : now.getMonth()
+            let day = (now.getDay() >= 1 && now.getDay() <= 9) ? ("0" + now.getDay().toString()) : now.getDay()
+            let hour = (now.getHours() >= 1 && now.getHours() <= 9) ? ("0" + now.getHours().toString()) : now.getHours()
+            let minute = (now.getMinutes() >= 1 && now.getMinutes() <= 9) ? ("0" + now.getMinutes().toString()) : now.getMinutes()
+            let second = (now.getSeconds() >= 1 && now.getSeconds() <= 9) ? ("0" + now.getSeconds().toString()) : now.getSeconds()
+            let formatTime = now.getFullYear() + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second
+            // 准备输出对象
+            let lightingAnalysis = {}
+            lightingAnalysis.title = "日照分析结果"
+            lightingAnalysis.lon = lon
+            lightingAnalysis.lat = lat
+            lightingAnalysis.height = height
+            lightingAnalysis.type = "累计"
+            lightingAnalysis.outputTime = "真太阳时"
+            lightingAnalysis.author = "vanndxh"
+            lightingAnalysis.analysisTime = formatTime
+            lightingAnalysis.lightingTime = lightingTime.toString().slice(0, 4) + "h"
+
+            console.log(lightingAnalysis)
+        }
     }
 
 </script>
