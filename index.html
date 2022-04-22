@@ -1,8 +1,8 @@
 <!--
 /**
- * @Author: vanndxh
- * @Date: 2022-4-14
- * @LastModified: 2022-4-21
+ * @author: vanndxh
+ * @date: 2022-4-14
+ * @lastModified: 2022-4-22
  */
 -->
 <!DOCTYPE html>
@@ -17,7 +17,8 @@
     <script type="text/javascript" src="js/optionEvent.js"></script>
     <script type="text/javascript" src="js/go.js"></script>
     <script type="text/javascript" src="js/lightingShadow.js"></script>
-    <script type="text/javascript" src="js/addSY.js"></script>
+    <script type="text/javascript" src="js/analyseViewshed.js"></script>
+    <script type="text/javascript" src="js/analyseVisibility.js"></script>
     <style>
         @import url(./node_modules/cesium/Build/CesiumUnminified/Widgets/widgets.css);
         @import "css/main.css";
@@ -37,17 +38,17 @@
 <body>
 <!--tabBar-->
 <h1 class="title" onclick="go(0)">浙江省地图影像demo</h1>
-<h1 class="title" style="margin: 10px 0 10px 2px">v0.0.4</h1>
+<h1 class="title" style="margin: 10px 0 10px 2px">v0.1.0</h1>
 <p style="display: inline-block; font-size: 14px; margin: 10px 0 10px 190px">by: vanndxh</p>
 
 <button class="button" onclick="go(0)">回起点</button>
 <button class="button" onclick="go(1)">去浙江</button>
 <button class="button" onclick="go(2)">去诸暨</button>
 
-<button class="button" style="width: 100px; background-color: cornflowerblue;" onclick="addSY()">视域分析</button>
-<button class="button" style="width: 100px; background-color: cornflowerblue;" onclick="addTS()">通视分析</button>
-<button class="button" style="width: 150px; background-color: darkgoldenrod;" onclick="viewer.flyTo(tileset);">前往3dtiles测试区</button>
-<button class="button" style="width: 100px; background-color: crimson;" onclick="lightingShadowInit()">日照分析</button>
+<button class="button" style="width: 100px; background-color: cornflowerblue;" onclick="analyseViewshed(viewer, optionsViewshed, pos)">视域分析</button>
+<button class="button" style="width: 100px; background-color: cornflowerblue;" onclick="analyseVisibility()">通视分析</button>
+<button class="button" style="width: 150px; background-color: darkgoldenrod;" onclick="go(3)">前往3dtiles测试区</button>
+<button class="button" style="width: 100px; background-color: crimson;" onclick="lightingShadowInit(viewer, optionsLighting, pos)">日照分析</button>
 
 <!--content-->
 <div id="cesiumContainer"></div>
@@ -68,6 +69,20 @@
 
     let tileset =  loadResources()
     optionEvent()
+
+    let optionsLighting = {
+        speed: 1000
+    }
+    let optionsViewshed = {
+        distance: 100,
+        direction: Cesium.Math.toRadians(50.0),
+        hFOV: 53,
+        vFOV: 53,
+        color: {
+            Fore: Cesium.Color.GREEN,
+            Back: Cesium.Color.RED,
+        }
+    }
 </script>
 
 </body>

@@ -1,4 +1,14 @@
-function addSY() {
+/**
+ * @author vanndxh
+ * @date 2022-4-21
+ * @lastModified 2022-4-22
+ * @param viewer 要创建分析所在viewer
+ * @param options 传入参数，包含distance分析半径, direction锥体方向, hFOV, vFOV, color可视/不可视颜色
+ * @param pos 观测点
+ */
+
+function analyseViewshed(viewer, options, pos) {
+
     let __makeTemplateObject = (this && this.__makeTemplateObject) || function(cooked, raw) {
         if (Object.defineProperty) {
             Object.defineProperty(cooked, "raw", {
@@ -9,9 +19,13 @@ function addSY() {
         }
         return cooked;
     };
+
+
     function glsl(x) {
         return x.toString();
     }
+
+
     function createPostStage(viewer, camera, distance, shadow) {
         viewer.shadows = true;
         viewer.terrainShadows = true;
@@ -53,6 +67,8 @@ function addSY() {
         });
         viewer.scene.postProcessStages.add(postStage);
     }
+
+
     function CreateViewshed(viewer, position, distance, direction, options) {
         let spotLightCamera = new Cesium.Camera(viewer.scene);
         let context = viewer.scene.context;
@@ -72,7 +88,7 @@ function addSY() {
         spotLightCamera.setView({
             destination: position,
             orientation: {
-                heading: Cesium.Math.toRadians(0), // 朝向，默认0为正上方
+                heading: options.direction, // 朝向，默认0为正上方
                 pitch: Cesium.Math.toRadians(0),
                 roll: 0
             }
@@ -104,6 +120,7 @@ function addSY() {
         viewer.scene.globe.show = true;
         viewer.scene.skyAtmosphere.show = false;
         createPostStage(viewer, spotLightCamera, options.distance, shadowMap)
+        // 以下obj不影响正常渲染
         let viewsObj = {};
         // viewsObj.position = position;
         // viewsObj.distance = distance;
@@ -123,20 +140,10 @@ function addSY() {
 
 
 
-    let options = {
-        position: pos,
-        distance: 100,
-        direction: Cesium.Math.toRadians(0.0),
-        hFOV: 53,
-        vFOV: 53,
-        color: {
-            Fore: Cesium.Color.GREEN,
-            Back: Cesium.Color.RED,
-        }
-    }
+
 
     if (pos) {
-        new CreateViewshed(viewer, options.position, options.distance, options.direction, options)
+        new CreateViewshed(viewer, pos, options.distance, options.direction, options)
         alert("视域分析完成！观测点坐标：" + pos)
     } else {
         alert("请先点击地图确定观测点！")

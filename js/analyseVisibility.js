@@ -1,4 +1,4 @@
-function addTS () {
+function analyseVisibility () {
     viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(115.77774943, 40.51669238, 2000)})
     // 开启地形深度监测
     viewer.scene.globe.depthTestAgainstTerrain = true;

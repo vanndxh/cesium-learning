@@ -1,11 +1,20 @@
-function lightingShadowInit() {
+/**
+ * @author vanndxh
+ * @date 2022-4-21
+ * @lastModified 2022-4-22
+ * @param viewer 要创建分析所在viewer
+ * @param options 传入参数，包含speed
+ * @param pos 观测点
+ */
+
+function lightingShadowInit(viewer, options, pos) {
     if (!pos) {
         alert("请先确定测量点")
     } else {
         // 实现日照分析demo
         scene.globe.enableLighting = true;
         viewer.shadows = true;
-        viewer.clock.multiplier = 1000;
+        viewer.clock.multiplier = options.speed;
         viewer.clock.shouldAnimate = true
         // 准备分析结果
         let cartographic = Cesium.Cartographic.fromCartesian(pos);
@@ -22,6 +31,7 @@ function lightingShadowInit() {
         let second = (now.getSeconds() >= 1 && now.getSeconds() <= 9) ? ("0" + now.getSeconds().toString()) : now.getSeconds()
         let formatTime = now.getFullYear() + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second
         // 输出对象
+
         let lightingAnalysis = {}
         lightingAnalysis.title = "日照分析结果"
         lightingAnalysis.lon = lon
