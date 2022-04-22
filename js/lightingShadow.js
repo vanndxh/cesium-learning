@@ -31,7 +31,6 @@ function lightingShadowInit(viewer, options, pos) {
         let second = (now.getSeconds() >= 1 && now.getSeconds() <= 9) ? ("0" + now.getSeconds().toString()) : now.getSeconds()
         let formatTime = now.getFullYear() + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second
         // 输出对象
-
         let lightingAnalysis = {}
         lightingAnalysis.title = "日照分析结果"
         lightingAnalysis.lon = lon

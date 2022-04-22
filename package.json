@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "cesium": "^1.92.0"
+    "cesium": "^1.92.0",
+    "jquery": "^3.6.0"
   }
 }

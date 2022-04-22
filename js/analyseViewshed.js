@@ -8,7 +8,9 @@
  */
 
 function analyseViewshed(viewer, options, pos) {
-
+    /**
+     * 依赖函数
+     */
     let __makeTemplateObject = (this && this.__makeTemplateObject) || function(cooked, raw) {
         if (Object.defineProperty) {
             Object.defineProperty(cooked, "raw", {
@@ -138,14 +140,18 @@ function analyseViewshed(viewer, options, pos) {
         return viewsObj;
     }
 
-
-
-
-
+    /**
+     * 视域分析
+     */
     if (pos) {
         new CreateViewshed(viewer, pos, options.distance, options.direction, options)
         alert("视域分析完成！观测点坐标：" + pos)
     } else {
         alert("请先点击地图确定观测点！")
     }
+
+    /**
+     * 输出分析结果报告（离散点信息）
+     */
+
 }

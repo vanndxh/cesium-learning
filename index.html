@@ -12,6 +12,7 @@
     <meta charset="UTF-8">
     <title>浙江省地图影像demo</title>
 
+    <script type="text/javascript" src="./node_modules/jquery/dist/jquery.js"></script>
     <script type="text/javascript" src="./node_modules/cesium/Build/Cesium/Cesium.js"></script>
     <script type="text/javascript" src="js/loadResources.js"></script>
     <script type="text/javascript" src="js/optionEvent.js"></script>
@@ -30,30 +31,51 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
+            position: absolute;
         }
     </style>
 
 </head>
 
 <body>
-<!--tabBar-->
-<h1 class="title" onclick="go(0)">浙江省地图影像demo</h1>
-<h1 class="title" style="margin: 10px 0 10px 2px">v0.1.0</h1>
-<p style="display: inline-block; font-size: 14px; margin: 10px 0 10px 190px">by: vanndxh</p>
-
-<button class="button" onclick="go(0)">回起点</button>
-<button class="button" onclick="go(1)">去浙江</button>
-<button class="button" onclick="go(2)">去诸暨</button>
-
-<button class="button" style="width: 100px; background-color: cornflowerblue;" onclick="analyseViewshed(viewer, optionsViewshed, pos)">视域分析</button>
-<button class="button" style="width: 100px; background-color: cornflowerblue;" onclick="analyseVisibility()">通视分析</button>
-<button class="button" style="width: 150px; background-color: darkgoldenrod;" onclick="go(3)">前往3dtiles测试区</button>
-<button class="button" style="width: 100px; background-color: crimson;" onclick="lightingShadowInit(viewer, optionsLighting, pos)">日照分析</button>
 
 <!--content-->
 <div id="cesiumContainer"></div>
+<!--tabBar-->
+<div id="tabBar" style="position: absolute">
+
+    <h1 class="title" onclick="go(0)">浙江省地图影像demo</h1>
+    <h1 class="title" style="margin: 10px 0 10px 2px">v0.1.0</h1>
+
+    <div class="select_box" style="float: right">
+        <font onclick="handleOption()">&#8250;</font>
+        <span onclick="handleOption()">操作</span>
+        <ul id="ulOp">
+            <li onclick="analyseViewshed(viewer, optionsViewshed, pos);$('#ulOp').hide()">视域分析</li>
+            <li onclick="analyseVisibility();$('#ulOp').hide()">通视分析</li>
+            <li onclick="lightingShadowInit(viewer, optionsLighting, pos);$('#ulOp').hide()">日照分析</li>
+            <li onclick="clear();$('#ulOp').hide()">清除所有</li>
+        </ul>
+    </div>
+
+    <div class="select_box" style="float: right">
+        <font onclick="handleGo()">&#8250;</font>
+        <span onclick="handleGo()">前往</span>
+        <ul id="ulGo">
+            <li onclick="go(0);$('#ulGo').hide()">回起点</li>
+            <li onclick="go(1);$('#ulGo').hide()">去浙江</li>
+            <li onclick="go(2);$('#ulGo').hide()">去诸暨</li>
+            <li onclick="go(3);$('#ulGo').hide()">3dtiles</li>
+        </ul>
+    </div>
+
+</div>
+
 
 <script>
+    /**
+     * config
+     */
     let viewer = new Cesium.Viewer("cesiumContainer", {
         baseLayerPicker: true,
         timeline: false,
@@ -70,6 +92,24 @@
     let tileset =  loadResources()
     optionEvent()
 
+    function handleGo () {
+        if ($("#ulGo").is(':hidden')) {
+            $("#ulGo").show()
+        } else {
+            $("#ulGo").hide()
+        }
+    }
+    function handleOption () {
+        if ($("#ulOp").is(':hidden')) {
+            $("#ulOp").show()
+        } else {
+            $("#ulOp").hide()
+        }
+    }
+
+    /**
+     * test
+     */
     let optionsLighting = {
         speed: 1000
     }
@@ -83,6 +123,7 @@
             Back: Cesium.Color.RED,
         }
     }
+
 </script>
 
 </body>

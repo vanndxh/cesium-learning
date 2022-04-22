@@ -1,3 +1,6 @@
+/**
+ * main
+ */
 .button {
     display: inline-block;
     width: 80px;
@@ -12,5 +15,66 @@
 .title {
     font-size: 18px;
     display: inline-block;
-    margin: 10px 0 10px 30px;
+    margin: 10px 0 10px 10px;
+    color: white;
+}
+
+/**
+ * 下拉框部分
+ */
+ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.select_box {
+    width: 100px;
+    height: 30px;
+    border: none;
+    position: relative;
+    margin: 6px 0 10px 30px;
+    background: #fff;
+    border-radius: 8px;
+}
+
+.select_box span {
+    display: inline-block;
+    width: 100px;
+    height: 30px;
+    line-height: 30px;
+    cursor: pointer;
+    text-indent: 10px;
+    font-weight: bold;
+}
+
+
+.select_box ul {
+    width: 100px;
+    position: absolute;
+    top: 30px;
+    left: -1px;
+    border: 1px solid #3CF;
+    display: none;
+    background: #fff;
+}
+
+.select_box li {
+    cursor: pointer;
+    line-height: 30px;
+    text-indent: 10px;
+}
+
+.select_box li:hover {
+    background: #39F;
+    color: #fff;
+}
+
+.select_box font {
+    position: absolute;
+    right: 10px;
+    font-size: 26px;
+    font-family: "微软雅黑";
+    color: #3CF;
+    transform: rotate(90deg);
 }
