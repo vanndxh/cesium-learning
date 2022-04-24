@@ -1,17 +1,18 @@
-function analyseVisibility () {
-    viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(115.77774943, 40.51669238, 2000)})
+/**
+ * @author vanndxh
+ * @date 2022-4-21
+ * @lastModified 2022-4-24
+ * @param viewer 要创建分析所在viewer
+ * @param pos 观测点
+ */
+function analyseVisibility (viewer, pos) {
+    let resultList = []
     // 开启地形深度监测
     viewer.scene.globe.depthTestAgainstTerrain = true;
 
     // 设定初始视角位置点
-    let viewPoint = Cesium.Cartesian3.fromDegrees(115.77774943, 40.51669238, 1000);
-    let viewPointEntity = viewer.entities.add({
-        position: viewPoint,
-        ellipsoid: {
-            // radii: new Cesium.Cartesian3(5, 5, 5),
-            material: Cesium.Color.YELLOW
-        },
-    });
+    let viewPoint = pos
+    // let viewPoint = Cesium.Cartesian3.fromDegrees(115.77774943, 40.51669238, 1000);
 
     // 视角位置创建坐标轴
     let transform = Cesium.Transforms.eastNorthUpToFixedFrame(viewPoint);
@@ -25,7 +26,7 @@ function analyseVisibility () {
     let viewPointWebMercator = webMercatorProjection.project(Cesium.Cartographic.fromCartesian(viewPoint));
 
     // 排除碰撞监测的对象
-    let objectsToExclude = [viewPointEntity, modelMatrixPrimitive];
+    let objectsToExclude = [modelMatrixPrimitive];
 
     // 目标点集合
     let TargetPoints = [];
@@ -33,8 +34,8 @@ function analyseVisibility () {
     // 视域点和目标点的距离
     let radius = 0;
 
-    // 计算45°和135°之间的目标点
-    for (let i = 45; i <= 135; i++) {
+    // 计算0°和90°之间的目标点
+    for (let i = 0; i <= 10; i++) {
         let linePoints = [];//记录一条线上的所有目标点
         let pointsNum = 15;//该方向插值点数
         let lineDis = 200;//每两个插值点之间的距离m1
@@ -64,25 +65,53 @@ function analyseVisibility () {
     }
     pickFromRay();
 
+    /**
+     * 依赖函数
+     */
     function pickFromRay() {
         for (let i = 0; i < TargetPoints.length; i++) {
+            let flag = false
+            let e
+
+
+
+
+
+            /*
             let cur_LinePoints = TargetPoints[i].points;
             cur_LinePoints.forEach(element => {
                 // 计算射线的方向&#xff0c;目标点left 视域点right
-                let direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(element.data, viewPoint, new Cesium.Cartesian3()), new Cesium.Cartesian3());
+                let direction = Cesium.Cartesian3.normalize(
+                    Cesium.Cartesian3.subtract(
+                        element.data,
+                        viewPoint,
+                        new Cesium.Cartesian3()
+                    ),
+                    new Cesium.Cartesian3()
+                );
                 // 建立射线
                 let ray = new Cesium.Ray(viewPoint, direction);
-                // let results = viewer.scene.drillPickFromRay(ray, 10, objectsToExclude); // 计算所有的交互点&#xff0c;最大不超过10个
-                let result = viewer.scene.pickFromRay(ray, objectsToExclude); // 计算交互点&#xff0c;返回第一个
-                let buffer = ReturnDistance(element.data, result.position);
-                // let M_color = Cesium.Color.GREEN;
-                if (buffer > 10) {
-                    // M_color = Cesium.Color.RED;
+                let res = scene.globe.pick(ray, scene)
+                if (res !== undefined && res !== null) {
                     element.show = false;
+                    if (!flag) {
+                        resultList.push(element.data)
+                        flag = true
+                    }
                 }
+                // let result = viewer.scene.pickFromRay(ray, objectsToExclude); // 计算交互点&#xff0c;返回第一个
+                // let buffer = ReturnDistance(element.data, result.position);
+                // if (buffer > 10) {
+                //     element.show = false;
+                // }
             });
-
+            if (!flag) {
+                resultList.push()
+            }
+             */
         }
+        console.log(resultList)
+        console.log(TargetPoints)
         drawViewshedLine(TargetPoints);
     }
 

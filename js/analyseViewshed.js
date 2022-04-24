@@ -1,13 +1,13 @@
 /**
  * @author vanndxh
  * @date 2022-4-21
- * @lastModified 2022-4-22
+ * @lastModified 2022-4-24
  * @param viewer 要创建分析所在viewer
  * @param options 传入参数，包含distance分析半径, direction锥体方向, hFOV, vFOV, color可视/不可视颜色
  * @param pos 观测点
  */
 
-function analyseViewshed(viewer, options, pos) {
+function analyseViewshed(viewer, pos, options) {
     /**
      * 依赖函数
      */
@@ -71,7 +71,7 @@ function analyseViewshed(viewer, options, pos) {
     }
 
 
-    function CreateViewshed(viewer, position, distance, direction, options) {
+    function CreateViewshed(viewer, position, options) {
         let spotLightCamera = new Cesium.Camera(viewer.scene);
         let context = viewer.scene.context;
 
@@ -125,26 +125,35 @@ function analyseViewshed(viewer, options, pos) {
         // 以下obj不影响正常渲染
         let viewsObj = {};
         // viewsObj.position = position;
-        // viewsObj.distance = distance;
-        // viewsObj.direction = direction;
+        // viewsObj.distance = options.distance;
+        // viewsObj.direction = options.direction;
         // viewsObj.viewshedObjOptions = options;
-        // // viewsObj.guid = this._cesium.createGuid();
-        // // viewsObj.guid = shadowMap.guid
         // viewsObj.guid = Cesium.createGuid()
-        // viewsObj.viewshedObjOptions.originalDirection = direction;
+        // viewsObj.viewshedObjOptions.originalDirection = options.direction;
         // viewsObj.type = "viewshed";
         // viewsObj.viewshedMap = shadowMap;
         // this._currentObject = viewsObj;
-        // Cesium.createViewshedCameraPrimitive(position, direction);
-        // this.createViewshedSpherePrimitive(position, 160)
+        // // Cesium.createViewshedCameraPrimitive(position, direction);
         return viewsObj;
+    }
+
+
+    function drawLine(start, end, color) {
+        viewer.entities.add({
+            position: start,
+            polyline: {
+                positions: [start, end],
+                width: 5,
+                material: color,
+            },
+        })
     }
 
     /**
      * 视域分析
      */
     if (pos) {
-        new CreateViewshed(viewer, pos, options.distance, options.direction, options)
+        new CreateViewshed(viewer, pos, options)
         alert("视域分析完成！观测点坐标：" + pos)
     } else {
         alert("请先点击地图确定观测点！")
@@ -153,5 +162,34 @@ function analyseViewshed(viewer, options, pos) {
     /**
      * 输出分析结果报告（离散点信息）
      */
+    let resultList = []
+    // 从视锥离散出n个点存入points
 
+    let points = []
+    let testPoint = Cesium.Cartesian3.fromDegrees(119.67774943, 30.61669238, 100);
+    points.push(testPoint)
+    // 遍历确定每一条射线的第一个交点
+    points.forEach(i => {
+        let direction = Cesium.Cartesian3.normalize(
+            Cesium.Cartesian3.subtract(
+                i,
+                pos,
+                new Cesium.Cartesian3()
+            ),
+            new Cesium.Cartesian3()
+        );
+        let ray = new Cesium.Ray(pos, direction);
+        let res = viewer.scene.globe.pick(ray, viewer.scene)
+        // console.log(direction, ray, res)
+        if (res !== undefined && res !== null) {
+            drawLine(pos, res, Cesium.Color.GREEN)
+            drawLine(res, i, Cesium.Color.RED)
+            resultList.push(res)
+        } else {
+            resultList.push(i)
+            drawLine(pos, i, Cesium.Color.GREEN)
+        }
+
+    })
+    console.log(resultList)
 }

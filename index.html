@@ -1,10 +1,3 @@
-<!--
-/**
- * @author: vanndxh
- * @date: 2022-4-14
- * @lastModified: 2022-4-22
- */
--->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -14,12 +7,14 @@
 
     <script type="text/javascript" src="./node_modules/jquery/dist/jquery.js"></script>
     <script type="text/javascript" src="./node_modules/cesium/Build/Cesium/Cesium.js"></script>
+
     <script type="text/javascript" src="js/loadResources.js"></script>
     <script type="text/javascript" src="js/optionEvent.js"></script>
     <script type="text/javascript" src="js/go.js"></script>
     <script type="text/javascript" src="js/lightingShadow.js"></script>
     <script type="text/javascript" src="js/analyseViewshed.js"></script>
     <script type="text/javascript" src="js/analyseVisibility.js"></script>
+
     <style>
         @import url(./node_modules/cesium/Build/CesiumUnminified/Widgets/widgets.css);
         @import "css/main.css";
@@ -51,8 +46,8 @@
         <font onclick="handleOption()">&#8250;</font>
         <span onclick="handleOption()">操作</span>
         <ul id="ulOp">
-            <li onclick="analyseViewshed(viewer, optionsViewshed, pos);$('#ulOp').hide()">视域分析</li>
-            <li onclick="analyseVisibility();$('#ulOp').hide()">通视分析</li>
+            <li onclick="analyseViewshed(viewer, pos, optionsViewshed);$('#ulOp').hide()">视域分析</li>
+            <li onclick="analyseVisibility(viewer, pos);$('#ulOp').hide()">通视分析</li>
             <li onclick="lightingShadowInit(viewer, optionsLighting, pos);$('#ulOp').hide()">日照分析</li>
             <li onclick="clear();$('#ulOp').hide()">清除所有</li>
         </ul>
@@ -123,6 +118,13 @@
             Back: Cesium.Color.RED,
         }
     }
+    viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(119.67774943, 30.61669238, 100),
+        ellipsoid: {
+            radii: new Cesium.Cartesian3(50, 50, 50),
+            material: Cesium.Color.YELLOW
+        },
+    })
 
 </script>
 
