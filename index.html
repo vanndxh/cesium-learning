@@ -110,21 +110,14 @@
     }
     let optionsViewshed = {
         distance: 100,
-        direction: Cesium.Math.toRadians(50.0),
-        hFOV: 53,
-        vFOV: 53,
+        direction: Cesium.Math.toRadians(90.0),
+        hFOV: 10,
+        vFOV: 4,
         color: {
             Fore: Cesium.Color.GREEN,
             Back: Cesium.Color.RED,
         }
     }
-    viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(119.67774943, 30.61669238, 100),
-        ellipsoid: {
-            radii: new Cesium.Cartesian3(50, 50, 50),
-            material: Cesium.Color.YELLOW
-        },
-    })
 
 </script>
 

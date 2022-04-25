@@ -57,7 +57,7 @@ function loadResources() {
     // 3d tiles
     let tileset = scene.primitives.add(
         new Cesium.Cesium3DTileset({
-            url: "http://172.17.70.209:3866/Smartearth/server/SG/anji.397940/tokens(eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImZhbnl1bmxpYW5nIn0.6d019Mi2PbKZ6yY6uRiyuHNq4x2cW5zKugSHBm0iHLo)/b3dm/anji.397940/tileset.json"
+            url: "http://172.17.70.209/SG/b3dm/anji.397940/tileset.json"
         })
     )
 

@@ -1,10 +1,10 @@
 /**
  * @author vanndxh
  * @date 2022-4-21
- * @lastModified 2022-4-24
+ * @lastModified 2022-4-25
  * @param viewer 要创建分析所在viewer
- * @param options 传入参数，包含distance分析半径, direction锥体方向, hFOV, vFOV, color可视/不可视颜色
  * @param pos 观测点
+ * @param options 传入参数，包含distance分析半径, direction锥体方向, hFOV, vFOV, color可视/不可视颜色
  */
 
 function analyseViewshed(viewer, pos, options) {
@@ -78,13 +78,9 @@ function analyseViewshed(viewer, pos, options) {
         const hr = options.hFOV;
         const vr = options.vFOV;
         spotLightCamera.frustum.aspectRatio = (options.distance * Math.tan(hr / 2) * 2) / (options.distance * Math.tan(vr / 2) * 2);
+        // spotLightCamera.frustum.aspectRatio = 1.0;
 
-        if (hr > vr) {
-            spotLightCamera.frustum.fov = hr;
-        } else {
-            spotLightCamera.frustum.fov = vr;
-        }
-        spotLightCamera.frustum.aspectRatio = 1.0;
+        spotLightCamera.frustum.fov = Math.max(hr, vr)
         spotLightCamera.frustum.near = 1.0;
         spotLightCamera.frustum.far = options.distance;
         spotLightCamera.setView({
@@ -110,7 +106,7 @@ function analyseViewshed(viewer, pos, options) {
         viewer.scene.shadowMap = new Cesium.ShadowMap(shadowOptions);
         let shadowMap = viewer.scene.shadowMap;
         shadowMap.enabled = true;
-        shadowMap.debugShow = false;
+        shadowMap.debugShow = true;
         shadowMap.show = true;
         shadowMap.maximumDistance = 10000;
         // Update render states for when polygon offset values change
@@ -123,7 +119,7 @@ function analyseViewshed(viewer, pos, options) {
         viewer.scene.skyAtmosphere.show = false;
         createPostStage(viewer, spotLightCamera, options.distance, shadowMap)
         // 以下obj不影响正常渲染
-        let viewsObj = {};
+        // let viewsObj = {};
         // viewsObj.position = position;
         // viewsObj.distance = options.distance;
         // viewsObj.direction = options.direction;
@@ -134,16 +130,16 @@ function analyseViewshed(viewer, pos, options) {
         // viewsObj.viewshedMap = shadowMap;
         // this._currentObject = viewsObj;
         // // Cesium.createViewshedCameraPrimitive(position, direction);
-        return viewsObj;
+        // return viewsObj;
     }
 
 
-    function drawLine(start, end, color) {
+    function drawLine(start, end, color, width) {
         viewer.entities.add({
             position: start,
             polyline: {
                 positions: [start, end],
-                width: 5,
+                width: width,
                 material: color,
             },
         })
@@ -153,7 +149,7 @@ function analyseViewshed(viewer, pos, options) {
      * 视域分析
      */
     if (pos) {
-        new CreateViewshed(viewer, pos, options)
+        CreateViewshed(viewer, pos, options)
         alert("视域分析完成！观测点坐标：" + pos)
     } else {
         alert("请先点击地图确定观测点！")
@@ -163,11 +159,32 @@ function analyseViewshed(viewer, pos, options) {
      * 输出分析结果报告（离散点信息）
      */
     let resultList = []
-    // 从视锥离散出n个点存入points
 
+    // 从视锥离散出n个点存入points
+    // 针对水平角度以及垂直角度进行遍历，基于极坐标系对每个视锥底面上的点求解三维地理坐标
     let points = []
-    let testPoint = Cesium.Cartesian3.fromDegrees(119.67774943, 30.61669238, 100);
-    points.push(testPoint)
+    for (let i=0; i<1; i++) {
+        for (let j=options.direction-options.vFOV/2+1; j<options.direction+options.vFOV/2-1; j++) {
+            let point = Cesium.Cartesian3.fromElements(
+                pos.x+options.distance*Math.cos(j)*Math.cos(i),
+                pos.y+options.distance*Math.sin(j)*Math.cos(i),
+                pos.z+options.distance*Math.sin(i)
+            )
+            viewer.entities.add({
+                position: point,
+                ellipsoid: {
+                    radii: new Cesium.Cartesian3(1, 1, 1),
+                    material: Cesium.Color.GREEN
+                },
+            });
+            points.push(point)
+        }
+    }
+    console.log(points)
+
+    // let testPoint = Cesium.Cartesian3.fromDegrees(119.67774943, 30.61669238, 100);
+    // points.push(testPoint)
+
     // 遍历确定每一条射线的第一个交点
     points.forEach(i => {
         let direction = Cesium.Cartesian3.normalize(
@@ -179,17 +196,15 @@ function analyseViewshed(viewer, pos, options) {
             new Cesium.Cartesian3()
         );
         let ray = new Cesium.Ray(pos, direction);
-        let res = viewer.scene.globe.pick(ray, viewer.scene)
-        // console.log(direction, ray, res)
-        if (res !== undefined && res !== null) {
-            drawLine(pos, res, Cesium.Color.GREEN)
-            drawLine(res, i, Cesium.Color.RED)
-            resultList.push(res)
+        let res = viewer.scene.pickFromRay(ray, [])
+        if (res !== undefined) {
+            drawLine(pos, res.position, Cesium.Color.GREEN, 1)
+            drawLine(res.position, i, Cesium.Color.RED, 1)
+            resultList.push(res.position)
         } else {
             resultList.push(i)
-            drawLine(pos, i, Cesium.Color.GREEN)
+            drawLine(pos, i, Cesium.Color.GREEN, 1)
         }
-
     })
     console.log(resultList)
 }
