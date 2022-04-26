@@ -78,9 +78,8 @@ function analyseViewshed(viewer, pos, options) {
         const hr = options.hFOV;
         const vr = options.vFOV;
         spotLightCamera.frustum.aspectRatio = (options.distance * Math.tan(hr / 2) * 2) / (options.distance * Math.tan(vr / 2) * 2);
-        // spotLightCamera.frustum.aspectRatio = 1.0;
 
-        spotLightCamera.frustum.fov = Math.max(hr, vr)
+        spotLightCamera.frustum.fov = Cesium.Math.toRadians(Math.max(hr, vr))
         spotLightCamera.frustum.near = 1.0;
         spotLightCamera.frustum.far = options.distance;
         spotLightCamera.setView({
@@ -88,7 +87,7 @@ function analyseViewshed(viewer, pos, options) {
             orientation: {
                 heading: options.direction, // 朝向，默认0为正上方
                 pitch: Cesium.Math.toRadians(0),
-                roll: 0
+                roll: Cesium.Math.toRadians(0)
             }
         });
         // Cesium.Cartesian3.clone(this._viewer.scene.globe.ellipsoid.geodeticSurfaceNormal(position, new Cesium.Cartesian3), spotLightCamera.up);
@@ -118,21 +117,46 @@ function analyseViewshed(viewer, pos, options) {
         viewer.scene.globe.show = true;
         viewer.scene.skyAtmosphere.show = false;
         createPostStage(viewer, spotLightCamera, options.distance, shadowMap)
-        // 以下obj不影响正常渲染
-        // let viewsObj = {};
-        // viewsObj.position = position;
-        // viewsObj.distance = options.distance;
-        // viewsObj.direction = options.direction;
-        // viewsObj.viewshedObjOptions = options;
-        // viewsObj.guid = Cesium.createGuid()
-        // viewsObj.viewshedObjOptions.originalDirection = options.direction;
-        // viewsObj.type = "viewshed";
-        // viewsObj.viewshedMap = shadowMap;
-        // this._currentObject = viewsObj;
-        // // Cesium.createViewshedCameraPrimitive(position, direction);
-        // return viewsObj;
+
+        // 绘制视锥线
+        drawFrustumOutline(spotLightCamera)
     }
 
+    function drawFrustumOutline(spotLightCamera) {
+        let scratchRight = new Cesium.Cartesian3();
+        let scratchRotation = new Cesium.Matrix3();
+        let scratchOrientation = new Cesium.Quaternion();
+        let direction = spotLightCamera.directionWC
+        let up = spotLightCamera.upWC;
+        let right = spotLightCamera.rightWC;
+        right = Cesium.Cartesian3.negate(right, scratchRight);
+
+        Cesium.Matrix3.setColumn(scratchRotation, 0, right, scratchRotation);
+        Cesium.Matrix3.setColumn(scratchRotation, 1, up, scratchRotation);
+        Cesium.Matrix3.setColumn(scratchRotation, 2, direction, scratchRotation);
+        //计算视锥姿态
+        let orientation = Cesium.Quaternion.fromRotationMatrix(scratchRotation, scratchOrientation);
+        //视锥轮廓线图形
+        let instanceOutline = new Cesium.GeometryInstance({
+            geometry: new Cesium.FrustumOutlineGeometry({
+                frustum: spotLightCamera.frustum,
+                origin: pos,
+                orientation: orientation
+            }),
+            attributes: {
+                color: Cesium.ColorGeometryInstanceAttribute.fromColor(Cesium.Color.YELLOW),
+                show: new Cesium.ShowGeometryInstanceAttribute(true)
+            }
+        });
+        //添加图元
+        viewer.scene.primitives.add(new Cesium.Primitive({
+            geometryInstances: [instanceOutline],
+            appearance: new Cesium.PerInstanceColorAppearance({
+                flat: true,
+                translucent: false
+            })
+        }));
+    }
 
     function drawLine(start, end, color, width) {
         viewer.entities.add({
@@ -144,6 +168,7 @@ function analyseViewshed(viewer, pos, options) {
             },
         })
     }
+
 
     /**
      * 视域分析
@@ -163,12 +188,14 @@ function analyseViewshed(viewer, pos, options) {
     // 从视锥离散出n个点存入points
     // 针对水平角度以及垂直角度进行遍历，基于极坐标系对每个视锥底面上的点求解三维地理坐标
     let points = []
-    for (let i=0; i<1; i++) {
-        for (let j=options.direction-options.vFOV/2+1; j<options.direction+options.vFOV/2-1; j++) {
+    for (let i=-options.vFOV/2+1; i<options.vFOV/2; i++) {
+        for (let j=options.direction-options.hFOV/2+1; j<options.direction+options.hFOV/2; j++) {
+            let _i = Cesium.Math.toRadians(i)
+            let _j = Cesium.Math.toRadians(j)
             let point = Cesium.Cartesian3.fromElements(
-                pos.x+options.distance*Math.cos(j)*Math.cos(i),
-                pos.y+options.distance*Math.sin(j)*Math.cos(i),
-                pos.z+options.distance*Math.sin(i)
+                pos.x - options.distance * Math.cos(_j) * Math.cos(_i),
+                pos.y - options.distance * Math.sin(_j) * Math.cos(_i),
+                pos.z - options.distance * Math.sin(_i)
             )
             viewer.entities.add({
                 position: point,
@@ -180,10 +207,7 @@ function analyseViewshed(viewer, pos, options) {
             points.push(point)
         }
     }
-    console.log(points)
-
-    // let testPoint = Cesium.Cartesian3.fromDegrees(119.67774943, 30.61669238, 100);
-    // points.push(testPoint)
+    console.log("points:" , points)
 
     // 遍历确定每一条射线的第一个交点
     points.forEach(i => {
@@ -197,7 +221,8 @@ function analyseViewshed(viewer, pos, options) {
         );
         let ray = new Cesium.Ray(pos, direction);
         let res = viewer.scene.pickFromRay(ray, [])
-        if (res !== undefined) {
+        let distance = res !== undefined ? Cesium.Cartesian3.distance(res.position, pos) : options.distance+1
+        if (res !== undefined && distance <= options.distance) {
             drawLine(pos, res.position, Cesium.Color.GREEN, 1)
             drawLine(res.position, i, Cesium.Color.RED, 1)
             resultList.push(res.position)
@@ -206,5 +231,5 @@ function analyseViewshed(viewer, pos, options) {
             drawLine(pos, i, Cesium.Color.GREEN, 1)
         }
     })
-    console.log(resultList)
+    console.log("resultList:", resultList)
 }
