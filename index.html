@@ -105,16 +105,16 @@
     }
 
     /**
-     * test
+     * test case
      */
     let optionsLighting = {
         speed: 1000
     }
     let optionsViewshed = {
-        distance: 100,
-        direction: Cesium.Math.toRadians(0.0),
-        hFOV: 360,
-        vFOV: 360,
+        distance: 100, // 观测距离
+        direction: Cesium.Math.toRadians(45.0), // 观测视角旋转角度
+        hFOV: 179, // 可视域水平夹角
+        vFOV: 30, // 可视域垂直夹角
         color: {
             Fore: Cesium.Color.GREEN,
             Back: Cesium.Color.RED,

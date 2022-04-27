@@ -1,10 +1,15 @@
 /**
  * @author vanndxh
  * @date 2022-4-21
- * @lastModified 2022-4-25
+ * @lastModified 2022-4-27
  * @param viewer 要创建分析所在viewer
  * @param pos 观测点
- * @param options 传入参数，包含distance分析半径, direction锥体方向, hFOV, vFOV, color可视/不可视颜色
+ * @param options 传入参数对象
+ * @param options.distance 分析半径
+ * @param options.direction 锥体方向
+ * @param options.hFOV 可视域水平夹角
+ * @param options.vFOV 可视域垂直夹角
+ * @param options.color 可视/不可视颜色
  */
 
 function analyseViewshed(viewer, pos, options) {
@@ -75,17 +80,18 @@ function analyseViewshed(viewer, pos, options) {
         let spotLightCamera = new Cesium.Camera(viewer.scene);
         let context = viewer.scene.context;
 
-        const hr = options.hFOV;
-        const vr = options.vFOV;
+        const hr = Cesium.Math.toRadians(options.hFOV);
+        const vr = Cesium.Math.toRadians(options.vFOV);
+        // 纵横比
         spotLightCamera.frustum.aspectRatio = (options.distance * Math.tan(hr / 2) * 2) / (options.distance * Math.tan(vr / 2) * 2);
 
-        spotLightCamera.frustum.fov = Cesium.Math.toRadians(Math.max(hr, vr))
+        spotLightCamera.frustum.fov = Math.max(hr, vr)
         spotLightCamera.frustum.near = 1.0;
         spotLightCamera.frustum.far = options.distance;
         spotLightCamera.setView({
             destination: position,
             orientation: {
-                heading: options.direction, // 朝向，默认0为正上方
+                heading: options.direction,
                 pitch: Cesium.Math.toRadians(0),
                 roll: Cesium.Math.toRadians(0)
             }
@@ -105,19 +111,18 @@ function analyseViewshed(viewer, pos, options) {
         viewer.scene.shadowMap = new Cesium.ShadowMap(shadowOptions);
         let shadowMap = viewer.scene.shadowMap;
         shadowMap.enabled = true;
-        shadowMap.debugShow = true;
+        shadowMap.debugShow = false; // 辅助圆
         shadowMap.show = true;
-        shadowMap.maximumDistance = 10000;
-        // Update render states for when polygon offset values change
-        shadowMap.debugCreateRenderStates();
         shadowMap._distance = options.distance;
-        // Force all derived commands to update
+        shadowMap.maximumDistance = 10000;
+        shadowMap.debugCreateRenderStates();
         shadowMap.dirty = true;
         viewer.scene.globe.shadows = Cesium.ShadowMode.fromCastReceive(true, true);
         viewer.scene.globe.show = true;
         viewer.scene.skyAtmosphere.show = false;
-        createPostStage(viewer, spotLightCamera, options.distance, shadowMap)
 
+        // 创建postStage
+        createPostStage(viewer, spotLightCamera, options.distance, shadowMap)
         // 绘制视锥线
         drawFrustumOutline(spotLightCamera)
     }
@@ -187,9 +192,13 @@ function analyseViewshed(viewer, pos, options) {
 
     // 从视锥离散出n个点存入points
     // 针对水平角度以及垂直角度进行遍历，基于极坐标系对每个视锥底面上的点求解三维地理坐标
+    // bug描述：
+    // 理想（错误/现在）算法：基于当前点的上北（y）右东（x）高度(z)进行xyz求解（可以理解为以camera建系独立计算）
+    // 正确算法：基于全球上北右东坐标系（甚至没有右东这个说法，全球建系的x正向轴未知，盲猜可能是格林威治线），这也是为什么中国地区x值为负数
+    // 误差来源：direction参数，如果该参数在任意点都指向北极，则误差消失
     let points = []
-    for (let i=-options.vFOV/2+1; i<options.vFOV/2; i++) {
-        for (let j=options.direction-options.hFOV/2+1; j<options.direction+options.hFOV/2; j++) {
+    for (let i=-options.vFOV/2+1; i<options.vFOV/2; i+=2) {
+        for (let j=options.direction-options.hFOV/2+1; j<options.direction+options.hFOV/2; j+=2) {
             let _i = Cesium.Math.toRadians(i)
             let _j = Cesium.Math.toRadians(j)
             let point = Cesium.Cartesian3.fromElements(
@@ -197,13 +206,13 @@ function analyseViewshed(viewer, pos, options) {
                 pos.y + options.distance * Math.sin(_j) * Math.cos(_i),
                 pos.z + options.distance * Math.sin(_i)
             )
-            viewer.entities.add({
-                position: point,
-                ellipsoid: {
-                    radii: new Cesium.Cartesian3(1, 1, 1),
-                    material: Cesium.Color.GREEN
-                },
-            });
+            // viewer.entities.add({
+            //     position: point,
+            //     ellipsoid: {
+            //         radii: new Cesium.Cartesian3(1, 1, 1),
+            //         material: Cesium.Color.GREEN
+            //     },
+            // });
             points.push(point)
         }
     }
@@ -223,12 +232,12 @@ function analyseViewshed(viewer, pos, options) {
         let res = viewer.scene.pickFromRay(ray, [])
         let distance = res !== undefined ? Cesium.Cartesian3.distance(res.position, pos) : options.distance+1
         if (res !== undefined && distance <= options.distance) {
-            drawLine(pos, res.position, Cesium.Color.GREEN, 1)
-            drawLine(res.position, i, Cesium.Color.RED, 1)
+            // drawLine(pos, res.position, Cesium.Color.GREEN, 1)
+            // drawLine(res.position, i, Cesium.Color.RED, 1)
             resultList.push(res.position)
         } else {
             resultList.push(i)
-            drawLine(pos, i, Cesium.Color.GREEN, 1)
+            // drawLine(pos, i, Cesium.Color.GREEN, 1)
         }
     })
     console.log("resultList:", resultList)
