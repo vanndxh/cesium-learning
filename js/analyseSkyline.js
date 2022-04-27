@@ -1,5 +1,13 @@
-
+/**
+ * @author vanndxh
+ * @date 2022-4-27
+ * @lastModified 2022-4-27
+ * @param viewer
+ */
 function analyseSkyline(viewer) {
+    /**
+     * 我也不知道前面那么多参数是在干嘛
+     */
     let cartographic = viewer.scene.camera.positionCartographic
     let lon = Cesium.Math.toDegrees(cartographic.longitude)
     let lat = Cesium.Math.toDegrees(cartographic.latitude)
@@ -11,11 +19,13 @@ function analyseSkyline(viewer) {
     let hpr = new Cesium.HeadingPitchRoll(direction, pitch, roll)
     let converter = Cesium.Transforms.eastNorthUpToFixedFrame
 
+    /**
+     * 开始操作
+     */
     let collection = viewer.scene.postProcessStages
     let edgeDetection = Cesium.PostProcessStageLibrary.createEdgeDetectionStage()
 
-    var postProcessStage = new Cesium.PostProcessStage({
-        name: "test",
+    let postProcessStage0 = new Cesium.PostProcessStage({
         fragmentShader: 'uniform sampler2D colorTexture;' +
             'uniform sampler2D depthTexture;' +
 
@@ -53,14 +63,18 @@ function analyseSkyline(viewer) {
             '}'+
             '}',
         uniforms: {
-            redTexture: postProcessStage.name,
+            redTexture: postProcessStage0.name,
             silhouetteTexture: edgeDetection.name
         }
     })
-    var postProcessStage = new Cesium.PostProcessStageComposite({
-        stages: [edgeDetection, postProcessStage, postProcessStage1],
+    let postProcessStage = new Cesium.PostProcessStageComposite({
+        stages: [edgeDetection, postProcessStage0, postProcessStage1],
         inputPreviousStageTexture: false,
         uniforms: edgeDetection.uniforms
     })
     collection.add(postProcessStage)
+    /**
+     * 导出结果
+     */
+
 }
