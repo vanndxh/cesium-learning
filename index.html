@@ -14,6 +14,7 @@
     <script type="text/javascript" src="js/lightingShadow.js"></script>
     <script type="text/javascript" src="js/analyseViewshed.js"></script>
     <script type="text/javascript" src="js/analyseVisibility.js"></script>
+    <script type="text/javascript" src="js/analyseSkyline.js"></script>
 
     <style>
         @import url(./node_modules/cesium/Build/CesiumUnminified/Widgets/widgets.css);
@@ -49,6 +50,7 @@
             <li onclick="analyseViewshed(viewer, pos, optionsViewshed);$('#ulOp').hide()">视域分析</li>
             <li onclick="analyseVisibility(viewer, pos);$('#ulOp').hide()">通视分析</li>
             <li onclick="lightingShadowInit(viewer, optionsLighting, pos);$('#ulOp').hide()">日照分析</li>
+            <li onclick="analyseSkyline(viewer); $('#ulOp').hide()">天际线分析</li>
             <li onclick="clear();$('#ulOp').hide()">清除所有</li>
         </ul>
     </div>

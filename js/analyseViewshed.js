@@ -193,9 +193,9 @@ function analyseViewshed(viewer, pos, options) {
             let _i = Cesium.Math.toRadians(i)
             let _j = Cesium.Math.toRadians(j)
             let point = Cesium.Cartesian3.fromElements(
-                pos.x - options.distance * Math.cos(_j) * Math.cos(_i),
-                pos.y - options.distance * Math.sin(_j) * Math.cos(_i),
-                pos.z - options.distance * Math.sin(_i)
+                pos.x + options.distance * Math.cos(_j) * Math.cos(_i),
+                pos.y + options.distance * Math.sin(_j) * Math.cos(_i),
+                pos.z + options.distance * Math.sin(_i)
             )
             viewer.entities.add({
                 position: point,
